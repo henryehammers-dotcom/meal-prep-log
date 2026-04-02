@@ -1,4 +1,4 @@
-const CACHE = 'tallymarket-v1';
+const CACHE = 'tallymarket-v2';
 const ASSETS = [
   '/meal-prep-log/',
   '/meal-prep-log/index.html',

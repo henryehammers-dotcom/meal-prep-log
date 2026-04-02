@@ -133,27 +133,42 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 .price-status{font-size:11px;color:var(--text3)}
 .price-status.done{color:var(--green)}
 .groc-disclaimer{font-size:11px;color:var(--text3);padding:0 2px 10px;line-height:1.5}
+.groc-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem}
+.groc-toolbar-left{display:flex;align-items:center;gap:8px}
+.groc-progress{font-size:12px;color:var(--text3)}
 .groc-section{margin-bottom:1.25rem}
 .groc-section-hdr{display:flex;justify-content:space-between;align-items:center;padding:0 0 6px;border-bottom:2px solid var(--border2);margin-bottom:4px;cursor:pointer;user-select:none}
 .groc-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3)}
 .groc-section-total{font-size:12px;font-weight:600;color:var(--green)}
 .groc-body{display:block}
 .groc-body.collapsed{display:none}
-.groc-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent}
-.groc-item:last-child{border-bottom:none}
+
+/* Swipe-to-delete item wrapper */
+.groc-item-wrap{position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+.groc-item-wrap:last-child{border-bottom:none}
+.groc-item-delete{position:absolute;right:0;top:0;bottom:0;width:64px;background:var(--red);display:flex;align-items:center;justify-content:center;cursor:pointer;transform:translateX(64px);transition:transform 0.2s}
+.groc-item-delete-icon{color:#fff;font-size:18px;line-height:1}
+.groc-item{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;transition:transform 0.2s,opacity 0.15s;-webkit-tap-highlight-color:transparent;background:var(--bg);position:relative;z-index:1}
 .groc-item.checked{opacity:0.35}
+.groc-item.swiped{transform:translateX(-64px)}
+.groc-item.swiped~.groc-item-delete{transform:translateX(0)}
 .groc-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:var(--bg2)}
 .groc-item.checked .groc-check{background:var(--green);border-color:var(--green)}
 .groc-checkmark{display:none;color:#fff;font-size:14px;font-weight:700;line-height:1}
 .groc-item.checked .groc-checkmark{display:block}
 .groc-item-body{flex:1;min-width:0}
-.groc-item-name{font-size:16px;color:var(--text);text-transform:capitalize;line-height:1.2}
+.groc-item-name{font-size:16px;color:var(--text);line-height:1.2}
 .groc-item.checked .groc-item-name{text-decoration:line-through;color:var(--text3)}
-.groc-item-qty{font-size:12px;color:var(--text3);margin-top:2px}
-.groc-item-price{font-size:15px;font-weight:600;color:var(--text);flex-shrink:0}
+.groc-item-note{font-size:12px;color:var(--text3);margin-top:2px;font-style:italic}
+.groc-item-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.groc-item-price{font-size:15px;font-weight:600;color:var(--text)}
 .groc-item.checked .groc-item-price{color:var(--text3)}
-.groc-reset-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.875rem}
-.groc-progress{font-size:12px;color:var(--text3)}
+.groc-edit-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px 4px;font-family:inherit;transition:color 0.15s}
+.groc-edit-btn:hover{color:var(--text)}
+
+/* Edit note inline */
+.groc-note-input{width:100%;height:28px;border:1px solid var(--accent);border-radius:6px;padding:0 8px;font-size:12px;background:var(--bg3);color:var(--text);font-family:inherit;margin-top:4px}
+.groc-note-input:focus{outline:none}
 
 /* Modals */
 .modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:900;align-items:center;justify-content:center;padding:16px}
@@ -380,8 +395,15 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
     <button class="btn btn-green btn-sm" onclick="fetchPrices()">Apply</button>
     <span class="price-status" id="price-status"></span>
   </div>
-  <div class="groc-disclaimer">Prices are estimates based on typical store pricing. Actual prices may vary.</div>
+  <div class="groc-disclaimer">Prices are estimates. Actual prices may vary.</div>
   <div class="stats-bar" id="groc-stats"></div>
+  <div class="groc-toolbar">
+    <div class="groc-toolbar-left">
+      <button class="btn btn-sm" onclick="refreshGrocery()" title="Refresh from meals" style="font-size:16px;padding:3px 8px">&#8635;</button>
+      <button class="btn btn-sm" onclick="uncheckAll()">Uncheck all</button>
+    </div>
+    <span class="groc-progress" id="groc-progress"></span>
+  </div>
   <div id="groc-container"></div>
 </div>
 
@@ -435,7 +457,7 @@ const DEFAULT_PLAN={
   Sun:[{id:7,type:'Breakfast'},{id:14,type:'Lunch'},{id:27,type:'Snack'},{id:20,type:'Dinner'},{id:28,type:'Post-workout'}],
 };
 
-let library=[],plan={},currentDay='Mon',nextId=31,pickingDay=null,editingId=null,priceCache={},checkedItems={},selectedType='Breakfast';
+let library=[],plan={},currentDay='Mon',nextId=31,pickingDay=null,editingId=null,selectedType='Breakfast';
 DAYS.forEach(d=>{if(!plan[d])plan[d]=[];});
 
 function savePlan(){try{localStorage.setItem(KEYS.plan,JSON.stringify(plan));}catch(e){}}
@@ -488,7 +510,7 @@ function switchTab(tab,el){
   document.querySelectorAll('.top-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   ['plan','grocery'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
-  if(tab==='grocery')renderGrocery();
+  // Grocery does NOT auto-render — use the refresh button
 }
 
 /* Day tabs */
@@ -696,164 +718,24 @@ function saveNewMeal(){
 }
 
 /* Grocery */
-const PRICE_EST={
-  'chicken breast':5,'chicken thighs':7,'chicken wings':6,'chicken drumsticks':4,'ground chicken':5,
-  'rotisserie chicken':8,'whole chicken':9,'turkey breast':8,'ground turkey':6,'deli turkey':5,
-  'turkey bacon':5,'lean ground beef':8,'ground beef':7,'sirloin steak':11,'ribeye':15,
-  'flank steak':10,'skirt steak':10,'chuck roast':7,'pork chops':6,'pork tenderloin':7,
-  'bacon':7,'ham':6,'pork sausage':5,'italian sausage':6,'chorizo':5,
-  'salmon fillet':10.5,'salmon':10.5,'shrimp':11.5,'tilapia':6,'cod':10,'tuna steak':12,
-  'canned tuna':1.5,'canned salmon':4,'halibut':14,'mahi mahi':11,'scallops':16,
-  'whey protein':9,'protein powder':9,'casein protein':10,'tofu':3,'tempeh':4,'edamame':4,
-  'lentils':2,'chickpeas':1.5,'black beans':1.5,'kidney beans':1.5,'pinto beans':1.5,
-  'white beans':1.5,'deli ham':5,'pepperoni':5,'salami':6,
-  'eggs':4,'egg whites':4,'greek yogurt':7,'plain yogurt':4,'yogurt':4,'cottage cheese':5,
-  'feta':3.5,'string cheese':5.5,'cheddar cheese':5,'mozzarella':5,'parmesan':5,
-  'gouda':6,'cream cheese':4,'ricotta':5,'whole milk':3.5,'2% milk':3.5,'skim milk':3,
-  'almond milk':4,'oat milk':5,'soy milk':4,'coconut milk':3,'heavy cream':4,'butter':5,
-  'ghee':8,'kefir':5,'sour cream':2.5,
-  'sourdough bread':5,'whole wheat bread':4,'white bread':3,'ezekiel bread':6,'bagels':5,
-  'english muffins':4,'pita bread':4,'naan':4,'whole wheat tortillas':4,'corn tortillas':3.5,
-  'flour tortillas':3.5,'brown rice':3,'white rice':2.5,'jasmine rice':3,'basmati rice':3.5,
-  'quinoa':5.5,'rolled oats':5,'steel cut oats':5,'whole wheat pasta':2.5,'rotini pasta':2,
-  'penne':2,'spaghetti':2,'linguine':2.5,'rice noodles':3,'udon noodles':3,'ramen noodles':2,
-  'egg noodles':3,'couscous':3,'farro':4,'barley':3,'polenta':3,'rice cakes':3.5,'granola':5,
-  'cereal':4,'crackers':3.5,'whole grain crackers':4,'breadcrumbs':2.5,
-  'broccoli':2.5,'cauliflower':3,'brussels sprouts':3.5,'kale':3,'spinach':3.5,'arugula':4,
-  'mixed greens':3.5,'romaine':3,'iceberg lettuce':2,'cabbage':1.75,'bok choy':2.5,
-  'swiss chard':3,'zucchini':1.25,'yellow squash':1.5,'butternut squash':3,'sweet potato':1,
-  'russet potato':1,'red potato':2,'yukon gold':2,'potatoes':2,'carrots':2,'celery':2,
-  'cucumber':1,'bell pepper':1.5,'jalapeno':1,'tomato':1.5,'cherry tomatoes':3.5,
-  'roma tomatoes':2,'grape tomatoes':3.5,'onion':1,'red onion':1,'yellow onion':1,
-  'green onion':1,'shallots':2,'garlic':1.5,'ginger':2,'leeks':3,'fennel':3,'beets':2.5,
-  'asparagus':4,'green beans':1.75,'snap peas':4,'peas':2,'corn':1.5,'mushrooms':3,
-  'portobello':4,'shiitake':5,'cremini':3,'eggplant':2,'artichoke':3,'avocado':1.5,
-  'mixed vegetables':3,'frozen broccoli':2.5,'frozen peas':2.5,'frozen corn':2,
-  'frozen spinach':2.5,'frozen edamame':4,'frozen vegetables':3,
-  'banana':1.5,'apple':0.8,'orange':1,'lemon':0.8,'lime':0.5,'limes':2,'grapefruit':1.5,
-  'pear':1.2,'peach':1.5,'mango':1.5,'pineapple':3,'strawberries':4,'blueberries':4,
-  'raspberries':4,'blackberries':4,'grapes':4,'cherries':5,'watermelon':5,
-  'mixed berries':4,'frozen mango':3.5,'frozen fruit':3.5,'frozen strawberries':3.5,
-  'dried cranberries':3,'raisins':3,'medjool dates':6,
-  'almonds':7,'walnuts':8,'cashews':8,'macadamia nuts':8,'pecans':6,'pistachios':8,
-  'pine nuts':7,'peanuts':4,'sunflower seeds':2.5,'pumpkin seeds':4,'sesame seeds':3,
-  'chia seeds':5,'hemp seeds':7,'trail mix':6,'mixed nuts':7,
-  'peanut butter':5.5,'almond butter':9,'cashew butter':10,'sunflower butter':7,
-  'tahini':7,'hummus':4,'guacamole':5,'salsa':4,
-  'olive oil':7,'avocado oil':9,'coconut oil':7,'vegetable oil':5,'canola oil':5,
-  'sesame oil':5,'red wine vinegar':3.5,'apple cider vinegar':4,'balsamic vinegar':5,
-  'rice vinegar':3.5,'soy sauce':3,'tamari':5,'worcestershire':3,'hot sauce':3,
-  'sriracha':4,'fish sauce':4,'ketchup':3,'mustard':2.5,'mayo':4,'capers':4,
-  'marinara sauce':3.5,'pasta sauce':3.5,'tomato sauce':2,'crushed tomatoes':2.5,
-  'diced tomatoes':2,'tomato paste':1.5,'salsa verde':4,'enchilada sauce':3,
-  'chicken broth':3,'beef broth':3,'vegetable broth':3,'kalamata olives':4,
-  'green olives':3,'artichoke hearts':4,'sundried tomatoes':5,
-  'honey':4,'maple syrup':4.5,'agave':5,'brown sugar':3,'white sugar':3,
-  'dark chocolate chips':4.5,'chocolate chips':4,'cocoa powder':5,'vanilla extract':5,
-  'flour':4,'almond flour':8,'oat flour':5,
-  'salt':2,'black pepper':3,'garlic powder':3,'onion powder':3,'cumin':3,'paprika':3,
-  'smoked paprika':3.5,'chili powder':3,'cayenne':3,'oregano':3,'basil':3,'thyme':3,
-  'rosemary':3,'turmeric':3,'cinnamon':3,'curry powder':3,'italian seasoning':3,
-  'taco seasoning':2.5,'nutritional yeast':7,'fresh cilantro':2,'fresh parsley':2,
-  'coffee':10,'green tea':5,'orange juice':4,'sparkling water':5,
-  'protein bar':2.5,'granola bar':4,'dark chocolate':4,'popcorn':3,'collagen peptides':20,
+
+// Grocery state — persists across tab switches, resets on refresh
+let grocList=[];       // [{key, name, price, checked, note, deleted}]
+let grocLoaded=false;  // has the list been built at least once?
+let itemNotes={};      // key -> note string (session only)
+let checkedItems={};   // key -> bool
+let deletedItems={};   // key -> bool
+
+// Category price buckets (avg per item, Harris Teeter baseline)
+const CAT_PRICE={
+  'Proteins & seafood':8.5,
+  'Dairy & eggs':4.5,
+  'Produce':2.5,
+  'Pantry & grains':3.5,
+  'Spices & condiments':3.0,
+  'Snacks & extras':5.0,
+  'Other':3.0,
 };
-
-const SERVING={
-  'chicken breast':[0.5,'lb'],'chicken thighs':[0.5,'lb'],'chicken wings':[0.75,'lb'],
-  'ground chicken':[0.5,'lb'],'rotisserie chicken':[1,'whole chicken'],
-  'ground turkey':[0.5,'lb'],'deli turkey':[0.25,'lb'],
-  'lean ground beef':[0.5,'lb'],'ground beef':[0.5,'lb'],
-  'sirloin steak':[0.5,'lb'],'ribeye':[0.5,'lb'],'flank steak':[0.5,'lb'],
-  'pork chops':[0.5,'lb'],'pork tenderloin':[0.5,'lb'],'bacon':[0.25,'lb'],
-  'salmon fillet':[0.5,'lb'],'salmon':[0.5,'lb'],'shrimp':[0.5,'lb'],
-  'tilapia':[0.5,'lb'],'cod':[0.5,'lb'],'halibut':[0.5,'lb'],
-  'canned tuna':[1,'can'],'canned salmon':[1,'can'],
-  'whey protein':[1,'scoop'],'protein powder':[1,'scoop'],
-  'tofu':[0.5,'block'],'lentils':[0.5,'cup dry'],
-  'chickpeas':[1,'can'],'black beans':[1,'can'],'kidney beans':[1,'can'],
-  'eggs':[3,'eggs'],'egg whites':[4,'egg whites'],
-  'greek yogurt':[1,'cup'],'yogurt':[1,'cup'],'cottage cheese':[0.75,'cup'],
-  'feta':[2,'oz'],'string cheese':[2,'sticks'],
-  'cheddar cheese':[2,'oz'],'mozzarella':[2,'oz'],'parmesan':[1,'oz'],
-  'whole milk':[1,'cup'],'almond milk':[1,'cup'],'oat milk':[1,'cup'],
-  'sour cream':[2,'tbsp'],'butter':[1,'tbsp'],
-  'brown rice':[0.5,'cup dry'],'white rice':[0.5,'cup dry'],'quinoa':[0.5,'cup dry'],
-  'rolled oats':[0.5,'cup'],'whole wheat pasta':[3,'oz dry'],'rotini pasta':[3,'oz dry'],
-  'penne':[3,'oz dry'],'spaghetti':[3,'oz dry'],'rice noodles':[3,'oz dry'],
-  'sourdough bread':[2,'slices'],'whole wheat bread':[2,'slices'],
-  'whole wheat tortillas':[2,'tortillas'],'corn tortillas':[3,'tortillas'],
-  'rice cakes':[2,'cakes'],'granola':[0.5,'cup'],'chia seeds':[2,'tbsp'],
-  'banana':[1,'banana'],'apple':[1,'apple'],'orange':[1,'orange'],
-  'lemon':[1,'lemon'],'lime':[1,'lime'],'limes':[2,'limes'],
-  'avocado':[1,'avocado'],'broccoli':[1,'head'],'sweet potato':[1,'sweet potato'],
-  'zucchini':[1,'zucchini'],'spinach':[2,'cups'],'mixed greens':[2,'cups'],'kale':[2,'cups'],
-  'cabbage':[0.25,'head'],'mushrooms':[4,'oz'],'cherry tomatoes':[1,'cup'],
-  'tomato':[1,'tomato'],'cucumber':[0.5,'cucumber'],'red onion':[0.5,'onion'],
-  'onion':[0.5,'onion'],'garlic':[3,'cloves'],'carrots':[2,'carrots'],
-  'green beans':[1,'cup'],'corn':[1,'ear'],'frozen mango':[1,'cup'],
-  'mixed berries':[1,'cup'],'strawberries':[1,'cup'],'blueberries':[1,'cup'],
-  'raspberries':[1,'cup'],'blackberries':[1,'cup'],
-  'olive oil':[1,'bottle'],'soy sauce':[1,'bottle'],'red wine vinegar':[1,'bottle'],
-  'hot sauce':[1,'bottle'],'sriracha':[1,'bottle'],'marinara sauce':[1,'jar'],
-  'hummus':[1,'tub'],'peanut butter':[1,'jar'],'almond butter':[1,'jar'],
-  'honey':[1,'bottle'],'maple syrup':[1,'bottle'],'kalamata olives':[1,'jar'],
-  'tahini':[1,'jar'],'almonds':[0.25,'cup'],'walnuts':[0.25,'cup'],
-  'cashews':[0.25,'cup'],'macadamia nuts':[0.25,'cup'],'pecans':[0.25,'cup'],
-  'sunflower seeds':[2,'tbsp'],'pumpkin seeds':[2,'tbsp'],
-  'dried cranberries':[0.25,'cup'],'dark chocolate chips':[0.25,'cup'],
-  'trail mix':[0.5,'cup'],'mixed nuts':[0.25,'cup'],
-};
-
-function estimatePrice(ingr){
-  const i=ingr.toLowerCase().trim();
-  if(PRICE_EST[i]!==undefined)return PRICE_EST[i];
-  let best=null,bestLen=0;
-  for(const[k,v]of Object.entries(PRICE_EST)){
-    if(i.includes(k)&&k.length>bestLen){best=v;bestLen=k.length;}
-  }
-  if(best!==null)return best;
-  for(const w of i.split(/\s+/)){
-    if(w.length<3)continue;
-    for(const[k,v]of Object.entries(PRICE_EST)){
-      if(k.includes(w)&&k.length>bestLen){best=v;bestLen=k.length;}
-    }
-  }
-  return best!==null?best:3.00;
-}
-
-function getQtyText(ingr,count){
-  const i=ingr.toLowerCase().trim();
-  let serving=null,bestLen=0;
-  for(const[k,v]of Object.entries(SERVING)){
-    if(i.includes(k)&&k.length>bestLen){serving=v;bestLen=k.length;}
-  }
-  if(!serving)return count===1?'for 1 meal':`for ${count} meals`;
-  const[amt,unit]=serving;
-  const total=amt*count;
-  if(unit==='lb'||unit==='lbs'){
-    if(total<1)return Math.round(total*16)+' oz';
-    return frac(total)+' lb'+(total!==1?'s':'');
-  }
-  if(unit.includes('cup'))return frac(total)+' cup'+(total>1.1?'s':'');
-  if(unit==='tbsp')return total+' tbsp';
-  if(unit.includes('oz')&&!unit.includes('fl'))return total+' oz';
-  if(unit.includes('clove'))return total+' cloves';
-  if(unit.includes('slice'))return total+' slices';
-  if(unit.includes('tortilla'))return total+' tortillas';
-  if(unit.includes('scoop'))return total+' scoop'+(total!==1?'s':'');
-  if(unit.includes('can'))return total+' can'+(total!==1?'s':'');
-  if(unit.includes('jar')||unit.includes('bottle')||unit.includes('tub'))return '1 '+unit;
-  if(unit.includes('whole')||unit.includes('head')||unit.includes('block'))return Math.ceil(total)+' '+(Math.ceil(total)>1?unit+'s':unit);
-  return total+' '+unit;
-}
-function frac(n){
-  const whole=Math.floor(n),f=n-whole;
-  const map={0.25:'¼',0.33:'⅓',0.5:'½',0.67:'⅔',0.75:'¾'};
-  const fl=map[Math.round(f*100)/100]||'';
-  if(whole===0)return fl||n.toFixed(1);
-  return fl?whole+fl:n.toFixed(1);
-}
 
 const STORE_PROFILES={
   'harris teeter':{mult:1.0,name:'Harris Teeter'},
@@ -881,24 +763,17 @@ function getStoreProfile(name){
   for(const[k,v]of Object.entries(STORE_PROFILES)){if(s.includes(k))return v;}
   return{mult:1.0,name};
 }
-
-function buildIngrList(){
-  const map={};
-  DAYS.forEach(d=>(plan[d]||[]).forEach(sl=>{
-    const m=getMeal(sl.id);
-    if(!m||!m.ingr)return;
-    m.ingr.split(',').forEach(i=>{const c=i.trim();if(c)map[c]=(map[c]||0)+1;});
-  }));
-  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+function getStoreMult(){
+  return getStoreProfile(document.getElementById('store-input').value.trim()||'Harris Teeter').mult;
 }
 
 const GROC_GROUPS={
-  'Proteins & seafood':['chicken','salmon','shrimp','tilapia','ground beef','sirloin','steak','turkey','tuna','whey','protein powder','tofu','tempeh','lentil','bean','edamame'],
-  'Dairy & eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk','cream','butter','ghee','kefir'],
-  'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato','potato','zucchini','squash','spinach','greens','kale','cabbage','mushroom','tomato','cucumber','onion','garlic','ginger','carrot','green bean','pea','corn','mango','berr','strawberr','blueberr','raspberry','blackberr','grape','cherry','melon','pineapple','frozen','lettuce','bok choy','arugula','fennel','beet','asparagus','artichoke','eggplant','leek','shallot','pepper'],
-  'Pantry & grains':['rice','quinoa','oat','pasta','rotini','tortilla','bread','cracker','naan','pita','rice cake','granola','chia','peanut butter','almond butter','cashew butter','hummus','olive','vinegar','marinara','sauce','tomato paste','broth','noodle','couscous','farro','barley','polenta','flour','sugar','oil','soy sauce','tamari','fish sauce','oyster sauce','ketchup','mustard','mayo','capers','tahini'],
+  'Proteins & seafood':['chicken','salmon','shrimp','tilapia','ground beef','sirloin','steak','turkey','tuna','whey','protein powder','tofu','tempeh','lentil','bean','edamame','pork','bacon','ham','sausage','chorizo','cod','halibut','mahi','scallop','crab','lobster'],
+  'Dairy & eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk','cream','butter','ghee','kefir','sour cream'],
+  'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato','potato','zucchini','squash','spinach','greens','kale','cabbage','mushroom','tomato','cucumber','onion','garlic','ginger','carrot','green bean','pea','corn','mango','berr','strawberr','blueberr','raspberry','blackberr','grape','cherry','melon','pineapple','frozen','lettuce','bok choy','arugula','fennel','beet','asparagus','artichoke','eggplant','leek','shallot','pepper','celery','radish'],
+  'Pantry & grains':['rice','quinoa','oat','pasta','rotini','tortilla','bread','cracker','naan','pita','rice cake','granola','chia','peanut butter','almond butter','cashew butter','hummus','olive','vinegar','marinara','sauce','tomato paste','broth','noodle','couscous','farro','barley','polenta','flour','sugar','oil','soy sauce','tamari','fish sauce','oyster sauce','ketchup','mustard','mayo','capers','tahini','bean'],
   'Spices & condiments':['salt','pepper','garlic powder','onion powder','cumin','paprika','chili powder','cayenne','oregano','basil','thyme','rosemary','turmeric','cinnamon','curry','seasoning','sriracha','hot sauce','worcestershire','vanilla','nutritional yeast','honey','maple syrup','agave'],
-  'Snacks & extras':['macadamia','pecan','almond','walnut','cashew','peanut','nut','cranberr','raisin','date','chocolate','trail mix','protein bar','granola bar','popcorn','chip','seed','sunflower','pumpkin','hemp','flax','collagen'],
+  'Snacks & extras':['macadamia','pecan','almond','walnut','cashew','peanut',' nut','cranberr','raisin','date','chocolate','trail mix','protein bar','granola bar','popcorn','chip','seed','sunflower','pumpkin','hemp','flax','collagen'],
 };
 function categorizeIngr(ingr){
   const i=ingr.toLowerCase();
@@ -906,111 +781,261 @@ function categorizeIngr(ingr){
   return 'Other';
 }
 
+function buildRawIngrList(){
+  // Collect raw ingredient strings exactly as typed, deduplicated case-insensitively
+  const seen={};
+  const out=[];
+  DAYS.forEach(d=>(plan[d]||[]).forEach(sl=>{
+    const m=getMeal(sl.id);
+    if(!m||!m.ingr)return;
+    m.ingr.split(',').forEach(raw=>{
+      const trimmed=raw.trim();
+      if(!trimmed)return;
+      const key=trimmed.toLowerCase();
+      if(!seen[key]){seen[key]=true;out.push(trimmed);}
+    });
+  }));
+  return out;
+}
+
+function refreshGrocery(){
+  // Reset all session state and rebuild from meals
+  checkedItems={};
+  deletedItems={};
+  itemNotes={};
+  grocLoaded=false;
+  renderGrocery();
+}
+
+function uncheckAll(){
+  checkedItems={};
+  document.querySelectorAll('.groc-item').forEach(el=>{
+    el.classList.remove('checked');
+    const chk=el.querySelector('.groc-check');
+    const mark=el.querySelector('.groc-checkmark');
+    if(chk)chk.style.background='var(--bg2)';
+    if(mark)mark.style.display='none';
+  });
+  updateGrocProgress();
+}
+
 function fetchPrices(){
   const store=document.getElementById('store-input').value.trim()||'Harris Teeter';
   const profile=getStoreProfile(store);
   localStorage.setItem(KEYS.store,store);
-  priceCache={};
-  buildIngrList().forEach(([ingr])=>{
-    priceCache[ingr.toLowerCase()]=parseFloat((estimatePrice(ingr)*profile.mult).toFixed(2));
-  });
   const s=document.getElementById('price-status');
   s.textContent=profile.name+' prices applied';
   s.className='price-status done';
-  renderGrocery();
+  // Re-render with new multiplier if list is loaded
+  if(grocLoaded)renderGrocery();
 }
 
 function renderGrocery(){
-  const ingrs=buildIngrList();
   const container=document.getElementById('groc-container');
-  if(!ingrs.length){
-    container.innerHTML='<div class="empty">Add meals to your week to generate a grocery list.</div>';
+
+  // Build list first time or on refresh
+  if(!grocLoaded){
+    const rawIngrs=buildRawIngrList();
+    if(!rawIngrs.length){
+      container.innerHTML='<div class="empty">Add meals to your week to generate a grocery list.</div>';
+      document.getElementById('groc-stats').innerHTML='';
+      document.getElementById('groc-progress').textContent='';
+      return;
+    }
+    // Categorize
+    const mult=getStoreMult();
+    const cats={};
+    rawIngrs.forEach(ingr=>{
+      if(deletedItems[ingr.toLowerCase()])return;
+      const cat=categorizeIngr(ingr);
+      if(!cats[cat])cats[cat]=[];
+      const basePrice=CAT_PRICE[cat]||3.0;
+      cats[cat].push({ingr,price:parseFloat((basePrice*mult).toFixed(2))});
+    });
+    // Store as flat list for re-renders
+    grocList=[];
+    const secOrder=['Proteins & seafood','Dairy & eggs','Produce','Pantry & grains','Spices & condiments','Snacks & extras','Other'];
+    secOrder.forEach(cat=>{if(cats[cat])cats[cat].forEach(item=>grocList.push({...item,cat}));});
+    grocLoaded=true;
+  }
+
+  // Filter out deleted items
+  const visible=grocList.filter(item=>!deletedItems[item.ingr.toLowerCase()]);
+
+  if(!visible.length){
+    container.innerHTML='<div class="empty">No items — tap &#8635; to refresh from your meals.</div>';
     document.getElementById('groc-stats').innerHTML='';
+    document.getElementById('groc-progress').textContent='';
     return;
   }
-  const cats={};
-  ingrs.forEach(([ingr,count])=>{
-    const cat=categorizeIngr(ingr);
-    if(!cats[cat])cats[cat]=[];
-    cats[cat].push({ingr,count});
-  });
-  const secOrder=['Proteins & seafood','Dairy & eggs','Produce','Pantry & grains','Spices & condiments','Snacks & extras','Other'];
-  const secTotals={};
-  let grandTotal=0;
-  secOrder.forEach(cat=>{
-    if(!cats[cat]||!cats[cat].length)return;
-    secTotals[cat]=cats[cat].reduce((s,{ingr})=>{
-      const p=priceCache[ingr.toLowerCase()];
-      return s+(p!==undefined?p:estimatePrice(ingr));
-    },0);
-    grandTotal+=secTotals[cat];
-  });
+
+  // Compute totals
+  const grandTotal=visible.reduce((s,item)=>s+(checkedItems[item.ingr.toLowerCase()]?0:item.price),0);
+  const remaining=visible.filter(item=>!checkedItems[item.ingr.toLowerCase()]).length;
   const mealCount=DAYS.reduce((s,d)=>s+(plan[d]||[]).length,0)||1;
+
   document.getElementById('groc-stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Est. total</div><div class="stat-value green">$${grandTotal.toFixed(2)}</div></div>
-    <div class="stat-card"><div class="stat-label">Per day</div><div class="stat-value">$${(grandTotal/7).toFixed(2)}</div></div>
+    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value">${remaining} items</div></div>
     <div class="stat-card"><div class="stat-label">Per meal</div><div class="stat-value accent">$${(grandTotal/mealCount).toFixed(2)}</div></div>`;
-  let html=`<div class="groc-reset-row">
-    <span class="groc-progress" id="groc-progress"></span>
-    <button class="btn btn-sm" onclick="resetChecked()">Uncheck all</button>
-  </div>`;
+
+  // Group visible items by category
+  const secOrder=['Proteins & seafood','Dairy & eggs','Produce','Pantry & grains','Spices & condiments','Snacks & extras','Other'];
+  const grouped={};
+  visible.forEach(item=>{if(!grouped[item.cat])grouped[item.cat]=[];grouped[item.cat].push(item);});
+
+  let html='';
   secOrder.forEach((cat,ci)=>{
-    if(!cats[cat]||!cats[cat].length)return;
+    if(!grouped[cat]||!grouped[cat].length)return;
     html+=`<div class="groc-section">
       <div class="groc-section-hdr" onclick="toggleGrocSec('gs-${ci}','gsc-${ci}')">
         <span class="groc-section-title">${cat}</span>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="groc-section-total">$${secTotals[cat].toFixed(2)}</span>
-          <span class="chevron" id="gsc-${ci}">&#9660;</span>
-        </div>
+        <span class="chevron" id="gsc-${ci}">&#9660;</span>
       </div>
       <div class="groc-body" id="gs-${ci}">`;
-    cats[cat].forEach(({ingr,count})=>{
-      const p=priceCache[ingr.toLowerCase()];
-      const price=p!==undefined?p:estimatePrice(ingr);
-      const key=ingr.replace(/[^a-z0-9]/gi,'_');
+    grouped[cat].forEach(item=>{
+      const key=item.ingr.toLowerCase();
       const isChecked=!!checkedItems[key];
-      html+=`<div class="groc-item${isChecked?' checked':''}" id="gi-${key}" onclick="toggleGrocItem('${key}')">
-        <div class="groc-check" style="background:${isChecked?'var(--green)':'var(--bg2)'}">
-          <span class="groc-checkmark" style="display:${isChecked?'block':'none'}">&#10003;</span>
+      const note=itemNotes[key]||'';
+      html+=`<div class="groc-item-wrap" id="wrap-${CSS.escape(key)}">
+        <div class="groc-item${isChecked?' checked':''}" id="gi-${CSS.escape(key)}"
+          ontouchstart="swipeStart(event,'${CSS.escape(key)}')"
+          ontouchmove="swipeMove(event,'${CSS.escape(key)}')"
+          ontouchend="swipeEnd(event,'${CSS.escape(key)}')"
+          onclick="toggleGrocItem('${key}')">
+          <div class="groc-check" style="background:${isChecked?'var(--green)':'var(--bg2)'}">
+            <span class="groc-checkmark" style="display:${isChecked?'block':'none'}">&#10003;</span>
+          </div>
+          <div class="groc-item-body">
+            <div class="groc-item-name">${item.ingr}</div>
+            ${note?`<div class="groc-item-note">${note}</div>`:''}
+            <div id="note-form-${CSS.escape(key)}" style="display:none">
+              <input class="groc-note-input" id="note-input-${CSS.escape(key)}" placeholder="Add a note..." value="${note}"
+                onclick="event.stopPropagation()"
+                onkeydown="if(event.key==='Enter'){saveNote('${key}');event.stopPropagation();}">
+            </div>
+          </div>
+          <div class="groc-item-right" onclick="event.stopPropagation()">
+            <button class="groc-edit-btn" onclick="toggleNoteForm('${key}')" title="Add note">&#9998;</button>
+            <span class="groc-item-price">$${item.price.toFixed(2)}</span>
+          </div>
         </div>
-        <div class="groc-item-body">
-          <div class="groc-item-name">${ingr}</div>
-          <div class="groc-item-qty">${getQtyText(ingr,count)}</div>
+        <div class="groc-item-delete" onclick="deleteGrocItem('${key}')">
+          <span class="groc-item-delete-icon">&#128465;</span>
         </div>
-        <div class="groc-item-price">$${price.toFixed(2)}</div>
       </div>`;
     });
     html+=`</div></div>`;
   });
+
   container.innerHTML=html;
   updateGrocProgress();
 }
 
 function toggleGrocItem(key){
   checkedItems[key]=!checkedItems[key];
-  const el=document.getElementById('gi-'+key);
+  const el=document.getElementById('gi-'+CSS.escape(key));
   if(!el)return;
   el.classList.toggle('checked',checkedItems[key]);
   el.querySelector('.groc-check').style.background=checkedItems[key]?'var(--green)':'var(--bg2)';
   el.querySelector('.groc-checkmark').style.display=checkedItems[key]?'block':'none';
   updateGrocProgress();
+  // Update total
+  renderGrocStats();
 }
+
+function renderGrocStats(){
+  const visible=grocList.filter(item=>!deletedItems[item.ingr.toLowerCase()]);
+  const grandTotal=visible.reduce((s,item)=>s+(checkedItems[item.ingr.toLowerCase()]?0:item.price),0);
+  const remaining=visible.filter(item=>!checkedItems[item.ingr.toLowerCase()]).length;
+  const mealCount=DAYS.reduce((s,d)=>s+(plan[d]||[]).length,0)||1;
+  const statsEl=document.getElementById('groc-stats');
+  if(statsEl)statsEl.innerHTML=`
+    <div class="stat-card"><div class="stat-label">Est. total</div><div class="stat-value green">$${grandTotal.toFixed(2)}</div></div>
+    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value">${remaining} items</div></div>
+    <div class="stat-card"><div class="stat-label">Per meal</div><div class="stat-value accent">$${(grandTotal/mealCount).toFixed(2)}</div></div>`;
+}
+
 function updateGrocProgress(){
   const all=document.querySelectorAll('.groc-item').length;
   const done=document.querySelectorAll('.groc-item.checked').length;
   const el=document.getElementById('groc-progress');
   if(el)el.textContent=all?done+' / '+all+' checked':'';
 }
-function resetChecked(){
-  checkedItems={};
-  document.querySelectorAll('.groc-item').forEach(el=>{
-    el.classList.remove('checked');
-    el.querySelector('.groc-check').style.background='var(--bg2)';
-    el.querySelector('.groc-checkmark').style.display='none';
-  });
-  updateGrocProgress();
+
+function toggleNoteForm(key){
+  const form=document.getElementById('note-form-'+CSS.escape(key));
+  const input=document.getElementById('note-input-'+CSS.escape(key));
+  if(!form)return;
+  const isOpen=form.style.display==='block';
+  form.style.display=isOpen?'none':'block';
+  if(!isOpen&&input){setTimeout(()=>input.focus(),50);}
+  else if(isOpen){saveNote(key);}
 }
+function saveNote(key){
+  const input=document.getElementById('note-input-'+CSS.escape(key));
+  if(!input)return;
+  const val=input.value.trim();
+  itemNotes[key]=val;
+  // Update note display without full re-render
+  const item=document.getElementById('gi-'+CSS.escape(key));
+  if(!item)return;
+  const noteEl=item.querySelector('.groc-item-note');
+  const form=document.getElementById('note-form-'+CSS.escape(key));
+  if(val){
+    if(noteEl)noteEl.textContent=val;
+    else{
+      const body=item.querySelector('.groc-item-body');
+      if(body){const d=document.createElement('div');d.className='groc-item-note';d.textContent=val;body.insertBefore(d,form);}
+    }
+  } else if(noteEl){noteEl.remove();}
+  if(form)form.style.display='none';
+}
+
+function deleteGrocItem(key){
+  deletedItems[key]=true;
+  const wrap=document.getElementById('wrap-'+CSS.escape(key));
+  if(wrap){wrap.style.transition='opacity 0.2s,height 0.2s';wrap.style.opacity='0';wrap.style.height='0';wrap.style.overflow='hidden';setTimeout(()=>{wrap.remove();updateGrocProgress();renderGrocStats();},220);}
+}
+
+// Swipe to delete
+let swipeStartX={}, swipeStartY={}, swipeActive={};
+function swipeStart(e,key){
+  const t=e.touches[0];
+  swipeStartX[key]=t.clientX;
+  swipeStartY[key]=t.clientY;
+  swipeActive[key]=true;
+}
+function swipeMove(e,key){
+  if(!swipeActive[key])return;
+  const t=e.touches[0];
+  const dx=t.clientX-swipeStartX[key];
+  const dy=Math.abs(t.clientY-swipeStartY[key]);
+  if(dy>20){swipeActive[key]=false;return;} // vertical scroll, cancel
+  if(dx<-20)e.preventDefault(); // prevent scroll when swiping left
+}
+function swipeEnd(e,key){
+  if(!swipeActive[key])return;
+  swipeActive[key]=false;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-swipeStartX[key];
+  const item=document.getElementById('gi-'+CSS.escape(key));
+  if(!item)return;
+  if(dx<-50){
+    // Swipe left — reveal delete
+    item.classList.add('swiped');
+    // Click anywhere else to close
+    setTimeout(()=>{
+      document.addEventListener('click',function handler(){
+        item.classList.remove('swiped');
+        document.removeEventListener('click',handler);
+      },{once:true});
+    },100);
+  } else if(dx>10){
+    item.classList.remove('swiped');
+  }
+}
+
 function toggleGrocSec(bodyId,chevId){
   document.getElementById(bodyId).classList.toggle('collapsed');
   document.getElementById(chevId).classList.toggle('open');
