@@ -1,10 +1,10 @@
-const CACHE = 'tallymarket-v3';
+const CACHE = 'tallymarket-v10';
 const ASSETS = [
   '/meal-prep-log/',
   '/meal-prep-log/index.html',
   '/meal-prep-log/manifest.json',
-  '/meal-prep-log/icon-192.png',
-  '/meal-prep-log/icon-512.png',
+  '/meal-prep-log/Tallymarket-Icon-192.png',
+  '/meal-prep-log/Tallymarket-Icon-512.png',
 ];
 
 self.addEventListener('install', e => {
@@ -24,7 +24,16 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Network first — always try to get fresh content
+  // Fall back to cache only if offline
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request)
+      .then(response => {
+        // Update the cache with the fresh response
+        const copy = response.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tallymarket">
@@ -107,17 +107,17 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 /* Forms */
 .field-group{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
 .field-hint{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:500}
-.form-input,.form-select,.form-textarea{height:38px;border:1px solid var(--border2);border-radius:8px;padding:0 11px;font-size:14px;background:var(--bg3);color:var(--text);width:100%;font-family:inherit;transition:border 0.15s}
-.form-textarea{height:auto;padding:9px 11px;resize:vertical;min-height:64px}
+.form-input,.form-select,.form-textarea{height:38px;border:1px solid var(--border2);border-radius:8px;padding:0 11px;font-size:16px;background:var(--bg3);color:var(--text);width:100%;font-family:inherit;transition:border 0.15s}
+.form-textarea{height:auto;padding:9px 11px;resize:vertical;min-height:64px;font-size:16px}
 .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--accent)}
 .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 
 /* Library search */
 .lib-search-row{display:flex;gap:8px;margin-bottom:10px}
-.lib-search{flex:1;height:34px;border:1px solid var(--border2);border-radius:8px;padding:0 11px;font-size:13px;background:var(--bg2);color:var(--text);font-family:inherit}
+.lib-search{flex:1;height:34px;border:1px solid var(--border2);border-radius:8px;padding:0 11px;font-size:16px;background:var(--bg2);color:var(--text);font-family:inherit}
 .lib-search:focus{outline:none;border-color:var(--accent)}
-.lib-filter{height:34px;border:1px solid var(--border2);border-radius:8px;padding:0 8px;font-size:12px;background:var(--bg3);color:var(--text);cursor:pointer;font-family:inherit}
+.lib-filter{height:34px;border:1px solid var(--border2);border-radius:8px;padding:0 8px;font-size:16px;background:var(--bg3);color:var(--text);cursor:pointer;font-family:inherit}
 .lib-section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border)}
 .lib-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:5px;cursor:pointer;transition:all 0.15s}
 .lib-item:hover{border-color:var(--accent);background:var(--accent-dim)}
@@ -128,7 +128,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 /* Grocery */
 .store-row{display:flex;gap:8px;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;flex-wrap:wrap}
 .store-label{font-size:12px;color:var(--text2);white-space:nowrap}
-.store-input{flex:1;min-width:140px;height:32px;border:1px solid var(--border2);border-radius:6px;padding:0 10px;font-size:13px;background:var(--bg3);color:var(--text);font-family:inherit}
+.store-input{flex:1;min-width:140px;height:32px;border:1px solid var(--border2);border-radius:6px;padding:0 10px;font-size:16px;background:var(--bg3);color:var(--text);font-family:inherit}
 .store-input:focus{outline:none;border-color:var(--green)}
 .price-status{font-size:11px;color:var(--text3)}
 .price-status.done{color:var(--green)}
@@ -143,32 +143,36 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 .groc-body{display:block}
 .groc-body.collapsed{display:none}
 
-/* Swipe-to-delete item wrapper */
-.groc-item-wrap{position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+/* Grocery item — long press to delete */
+.groc-item-wrap{position:relative;border-bottom:1px solid var(--border)}
 .groc-item-wrap:last-child{border-bottom:none}
-.groc-item-delete{position:absolute;right:0;top:0;bottom:0;width:64px;background:var(--red);display:flex;align-items:center;justify-content:center;cursor:pointer;transform:translateX(64px);transition:transform 0.2s}
-.groc-item-delete-icon{color:#fff;font-size:18px;line-height:1}
-.groc-item{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;transition:transform 0.2s,opacity 0.15s;-webkit-tap-highlight-color:transparent;background:var(--bg);position:relative;z-index:1}
+.groc-item{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;background:var(--bg);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
 .groc-item.checked{opacity:0.35}
-.groc-item.swiped{transform:translateX(-64px)}
-.groc-item.swiped~.groc-item-delete{transform:translateX(0)}
 .groc-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:var(--bg2)}
 .groc-item.checked .groc-check{background:var(--green);border-color:var(--green)}
 .groc-checkmark{display:none;color:#fff;font-size:14px;font-weight:700;line-height:1}
 .groc-item.checked .groc-checkmark{display:block}
-.groc-item-body{flex:1;min-width:0}
-.groc-item-name{font-size:16px;color:var(--text);line-height:1.2}
+.groc-item-body{flex:1;min-width:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+.groc-item-name{font-size:16px;color:var(--text);line-height:1.2;user-select:none;-webkit-user-select:none;}
 .groc-item.checked .groc-item-name{text-decoration:line-through;color:var(--text3)}
 .groc-item-note{font-size:12px;color:var(--text3);margin-top:2px;font-style:italic}
 .groc-item-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .groc-item-price{font-size:15px;font-weight:600;color:var(--text)}
 .groc-item.checked .groc-item-price{color:var(--text3)}
-.groc-edit-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px 4px;font-family:inherit;transition:color 0.15s}
+.groc-edit-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 4px;font-family:inherit;transition:color 0.15s;line-height:1}
 .groc-edit-btn:hover{color:var(--text)}
-
-/* Edit note inline */
-.groc-note-input{width:100%;height:28px;border:1px solid var(--accent);border-radius:6px;padding:0 8px;font-size:12px;background:var(--bg3);color:var(--text);font-family:inherit;margin-top:4px}
+.groc-delete-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:2px 6px;font-family:inherit;transition:color 0.15s;line-height:1;-webkit-tap-highlight-color:transparent}
+.groc-delete-btn:hover,.groc-delete-btn:active{color:var(--red)}
+.groc-note-input{width:100%;height:36px;border:1px solid var(--accent);border-radius:6px;padding:0 8px;font-size:16px;background:var(--bg3);color:var(--text);font-family:inherit;margin-top:4px}
 .groc-note-input:focus{outline:none}
+
+/* Recipe modal */
+.recipe-modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:960;align-items:flex-end;justify-content:center}
+.recipe-modal-wrap.show{display:flex}
+.recipe-modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:1.25rem 1.25rem 2.5rem;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;border-top:1px solid var(--border2)}
+.recipe-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.25rem}
+.recipe-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px}
+.recipe-subtitle{font-size:12px;color:var(--text3);margin-bottom:1.25rem}
 
 /* Modals */
 .modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:900;align-items:center;justify-content:center;padding:16px}
@@ -331,8 +335,39 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
       </div>
       <div style="display:flex;gap:8px;margin-top:6px">
         <button class="btn" style="flex:1" onclick="showMealList()">Cancel</button>
+        <button class="btn" style="flex:1" onclick="openRecipeModal()">Recipe</button>
         <button class="btn btn-primary" style="flex:2" id="mm-save-btn" onclick="saveNewMeal()">Save &amp; add to week</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recipe modal -->
+<div id="recipe-modal-wrap" class="recipe-modal-wrap">
+  <div class="recipe-modal">
+    <div class="recipe-handle"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem">
+      <div>
+        <div class="recipe-title" id="recipe-title">Recipe</div>
+        <div class="recipe-subtitle">Fill in as much or as little as you want</div>
+      </div>
+      <button onclick="closeRecipeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);font-family:inherit;line-height:1;padding:0">&#x2715;</button>
+    </div>
+    <div class="field-group">
+      <label class="field-hint">Ingredients &amp; amounts</label>
+      <textarea class="form-textarea" id="recipe-ingredients" placeholder="e.g.&#10;1 lb chicken breast&#10;1 cup brown rice&#10;2 cups broccoli" style="min-height:100px"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-hint">Cook time</label>
+      <input class="form-input" id="recipe-cooktime" placeholder="e.g. 30 minutes">
+    </div>
+    <div class="field-group">
+      <label class="field-hint">Instructions</label>
+      <textarea class="form-textarea" id="recipe-instructions" placeholder="Step by step..." style="min-height:120px"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" style="flex:1" onclick="closeRecipeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveRecipe()">Save recipe</button>
     </div>
   </div>
 </div>
@@ -602,11 +637,11 @@ function showMealList(){
 }
 function showMealForm(id){
   editingId=id||null;
+  window._pendingRecipe=null;
   document.getElementById('sheet-step1').style.display='none';
   document.getElementById('sheet-step2').style.display='block';
   selectedType=editingId?getMeal(editingId).type:'Breakfast';
   buildTypePicker();
-  // Update save button label
   document.getElementById('mm-save-btn').textContent=editingId?'Save changes':'Save & add to week';
   if(editingId){
     const m=getMeal(editingId);
@@ -702,6 +737,7 @@ function saveNewMeal(){
     carb:parseInt(document.getElementById('mm-carb').value)||0,
     fat:parseInt(document.getElementById('mm-fat').value)||0,
     ingr:document.getElementById('mm-ingr').value.trim(),
+    recipe:window._pendingRecipe||(editingId&&getMeal(editingId)&&getMeal(editingId).recipe)||null,
   };
   if(editingId){library=library.map(m=>m.id===editingId?meal:m);}
   else{library.push(meal);}
@@ -727,6 +763,63 @@ let checkedItems={};   // key -> bool
 let deletedItems={};   // key -> bool
 
 // Category price buckets (avg per item, Harris Teeter baseline)
+// Item-level price anchors — these override the category bucket for known ingredients
+const ITEM_PRICES={
+  // Proteins
+  'chicken breast':5.0,'chicken thighs':7.0,'chicken wings':6.0,'ground chicken':5.0,
+  'rotisserie chicken':8.0,'whole chicken':9.0,'ground turkey':6.0,'deli turkey':5.0,
+  'turkey breast':8.0,'turkey bacon':5.0,'lean ground beef':8.0,'ground beef':7.0,
+  'sirloin steak':11.0,'ribeye':15.0,'flank steak':10.0,'skirt steak':10.0,
+  'pork chops':6.0,'pork tenderloin':7.0,'bacon':7.0,'ham':6.0,
+  'italian sausage':6.0,'chorizo':5.0,'pork sausage':5.0,
+  'salmon':10.5,'salmon fillet':10.5,'shrimp':11.5,'tilapia':6.0,'cod':10.0,
+  'tuna steak':12.0,'canned tuna':1.5,'canned salmon':4.0,'halibut':14.0,
+  'mahi mahi':11.0,'scallops':16.0,'crab':12.0,'lobster':20.0,
+  'whey protein':9.0,'protein powder':9.0,'casein protein':10.0,
+  'tofu':3.0,'tempeh':4.0,'edamame':4.0,'lentils':2.0,
+  // Dairy & eggs
+  'eggs':4.0,'egg whites':4.0,'greek yogurt':7.0,'plain yogurt':4.0,'yogurt':4.0,
+  'cottage cheese':5.0,'feta':3.5,'string cheese':5.5,'cheddar cheese':5.0,
+  'mozzarella':5.0,'parmesan':5.0,'cream cheese':4.0,'ricotta':5.0,
+  'whole milk':3.5,'almond milk':4.0,'oat milk':5.0,'soy milk':4.0,
+  'coconut milk':3.0,'heavy cream':4.0,'butter':5.0,'ghee':8.0,'sour cream':2.5,
+  // Produce
+  'banana':1.5,'apple':2.5,'orange':2.0,'lemon':1.5,'lime':1.5,'limes':2.0,
+  'avocado':2.0,'broccoli':2.5,'sweet potato':1.5,'zucchini':2.0,'spinach':3.5,
+  'mixed greens':3.5,'kale':3.0,'cabbage':2.0,'mushrooms':3.0,
+  'cherry tomatoes':3.5,'tomato':2.0,'cucumber':1.5,'red onion':1.5,'onion':1.5,
+  'garlic':1.5,'carrots':2.0,'green beans':2.0,'corn':1.5,'frozen mango':3.5,
+  'mixed berries':4.0,'strawberries':4.0,'blueberries':4.0,'raspberries':4.0,
+  'blackberries':4.0,'potatoes':2.0,'asparagus':4.0,
+  // Pantry
+  'brown rice':3.0,'white rice':2.5,'quinoa':5.5,'rolled oats':5.0,
+  'whole wheat pasta':2.5,'rotini pasta':2.0,'penne':2.0,'spaghetti':2.0,
+  'rice noodles':3.0,'sourdough bread':5.0,'whole wheat bread':4.0,
+  'whole wheat tortillas':4.0,'corn tortillas':3.5,'rice cakes':3.5,'granola':5.0,
+  'chia seeds':5.0,'peanut butter':5.5,'almond butter':9.0,'hummus':4.0,
+  'olive oil':7.0,'soy sauce':3.0,'red wine vinegar':3.5,'marinara sauce':3.5,
+  'tomato paste':1.5,'chicken broth':3.0,'kalamata olives':4.0,
+  'honey':4.0,'maple syrup':4.5,'dark chocolate chips':4.5,
+  // Snacks
+  'macadamia nuts':8.0,'pecans':6.0,'almonds':7.0,'walnuts':8.0,'cashews':8.0,
+  'sunflower seeds':2.5,'pumpkin seeds':4.0,'chia seeds':5.0,'hemp seeds':7.0,
+  'dried cranberries':3.0,'trail mix':6.0,'protein bar':2.5,'dark chocolate':4.0,
+};
+
+function getItemPrice(ingr,cat){
+  const i=ingr.toLowerCase().trim();
+  // Try exact match first
+  if(ITEM_PRICES[i]!==undefined)return ITEM_PRICES[i];
+  // Try partial match — longest key wins
+  let best=null,bestLen=0;
+  for(const[k,v]of Object.entries(ITEM_PRICES)){
+    if(i.includes(k)&&k.length>bestLen){best=v;bestLen=k.length;}
+  }
+  if(best!==null)return best;
+  // Fall back to category bucket
+  return CAT_PRICE[cat]||3.0;
+}
+
 const CAT_PRICE={
   'Proteins & seafood':8.5,
   'Dairy & eggs':4.5,
@@ -767,13 +860,39 @@ function getStoreMult(){
   return getStoreProfile(document.getElementById('store-input').value.trim()||'Harris Teeter').mult;
 }
 
+// Categorization — ORDER MATTERS. Produce checked before Proteins to avoid
+// "green beans" matching "bean" in proteins, etc.
 const GROC_GROUPS={
-  'Proteins & seafood':['chicken','salmon','shrimp','tilapia','ground beef','sirloin','steak','turkey','tuna','whey','protein powder','tofu','tempeh','lentil','bean','edamame','pork','bacon','ham','sausage','chorizo','cod','halibut','mahi','scallop','crab','lobster'],
-  'Dairy & eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk','cream','butter','ghee','kefir','sour cream'],
-  'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato','potato','zucchini','squash','spinach','greens','kale','cabbage','mushroom','tomato','cucumber','onion','garlic','ginger','carrot','green bean','pea','corn','mango','berr','strawberr','blueberr','raspberry','blackberr','grape','cherry','melon','pineapple','frozen','lettuce','bok choy','arugula','fennel','beet','asparagus','artichoke','eggplant','leek','shallot','pepper','celery','radish'],
-  'Pantry & grains':['rice','quinoa','oat','pasta','rotini','tortilla','bread','cracker','naan','pita','rice cake','granola','chia','peanut butter','almond butter','cashew butter','hummus','olive','vinegar','marinara','sauce','tomato paste','broth','noodle','couscous','farro','barley','polenta','flour','sugar','oil','soy sauce','tamari','fish sauce','oyster sauce','ketchup','mustard','mayo','capers','tahini','bean'],
-  'Spices & condiments':['salt','pepper','garlic powder','onion powder','cumin','paprika','chili powder','cayenne','oregano','basil','thyme','rosemary','turmeric','cinnamon','curry','seasoning','sriracha','hot sauce','worcestershire','vanilla','nutritional yeast','honey','maple syrup','agave'],
-  'Snacks & extras':['macadamia','pecan','almond','walnut','cashew','peanut',' nut','cranberr','raisin','date','chocolate','trail mix','protein bar','granola bar','popcorn','chip','seed','sunflower','pumpkin','hemp','flax','collagen'],
+  'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato',
+    'potato','zucchini','squash','spinach','greens','kale','cabbage','mushroom','tomato',
+    'cucumber','onion','garlic','ginger','carrot','green bean','snap pea','pea','corn',
+    'mango','berr','strawberr','blueberr','raspberry','blackberr','grape','cherry','melon',
+    'pineapple','frozen fruit','frozen mango','frozen berr','frozen spinach','frozen broccoli',
+    'frozen corn','frozen pea','frozen vegetable','lettuce','bok choy','arugula','fennel',
+    'beet','asparagus','artichoke','eggplant','leek','shallot','bell pepper','jalapeño',
+    'celery','radish','mixed vegetable','stir fry vegetable'],
+  'Proteins & seafood':['chicken breast','chicken thigh','chicken wing','chicken drum',
+    'ground chicken','rotisserie chicken','whole chicken','turkey breast','ground turkey',
+    'deli turkey','turkey bacon','lean ground beef','ground beef','sirloin','ribeye',
+    'flank steak','skirt steak','chuck roast','pork chop','pork tenderloin','bacon','ham',
+    'italian sausage','chorizo','pork sausage','salmon','shrimp','tilapia','cod','tuna',
+    'halibut','mahi','scallop','crab','lobster','whey protein','protein powder','casein',
+    'tofu','tempeh','edamame','lentil','black bean','kidney bean','white bean','pinto bean',
+    'chickpea','refried bean','deli ham','pepperoni','salami'],
+  'Dairy & eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk',
+    'cream','butter','ghee','kefir','sour cream'],
+  'Pantry & grains':['rice','quinoa','oat','pasta','rotini','tortilla','bread','cracker',
+    'naan','pita','rice cake','granola','chia','peanut butter','almond butter','cashew butter',
+    'hummus','olive','vinegar','marinara','sauce','tomato paste','broth','noodle','couscous',
+    'farro','barley','polenta','flour','sugar','oil','soy sauce','tamari','fish sauce',
+    'oyster sauce','ketchup','mustard','mayo','capers','tahini'],
+  'Spices & condiments':['salt','pepper','garlic powder','onion powder','cumin','paprika',
+    'chili powder','cayenne','oregano','basil','thyme','rosemary','turmeric','cinnamon',
+    'curry','seasoning','sriracha','hot sauce','worcestershire','vanilla','nutritional yeast',
+    'honey','maple syrup','agave'],
+  'Snacks & extras':['macadamia','pecan','almond','walnut','cashew','peanut','nut',
+    'cranberr','raisin','date','chocolate','trail mix','protein bar','granola bar','popcorn',
+    'chip','seed','sunflower','pumpkin seed','hemp','flax','collagen'],
 };
 function categorizeIngr(ingr){
   const i=ingr.toLowerCase();
@@ -826,8 +945,14 @@ function fetchPrices(){
   const s=document.getElementById('price-status');
   s.textContent=profile.name+' prices applied';
   s.className='price-status done';
-  // Re-render with new multiplier if list is loaded
-  if(grocLoaded)renderGrocery();
+  // Recalculate prices on existing list with new multiplier
+  if(grocLoaded){
+    grocList=grocList.map(item=>({
+      ...item,
+      price:parseFloat((getItemPrice(item.ingr,item.cat)*profile.mult).toFixed(2))
+    }));
+    renderGrocery();
+  }
 }
 
 function renderGrocery(){
@@ -849,7 +974,7 @@ function renderGrocery(){
       if(deletedItems[ingr.toLowerCase()])return;
       const cat=categorizeIngr(ingr);
       if(!cats[cat])cats[cat]=[];
-      const basePrice=CAT_PRICE[cat]||3.0;
+      const basePrice=getItemPrice(ingr,cat);
       cats[cat].push({ingr,price:parseFloat((basePrice*mult).toFixed(2))});
     });
     // Store as flat list for re-renders
@@ -898,11 +1023,7 @@ function renderGrocery(){
       const isChecked=!!checkedItems[key];
       const note=itemNotes[key]||'';
       html+=`<div class="groc-item-wrap" id="wrap-${CSS.escape(key)}">
-        <div class="groc-item${isChecked?' checked':''}" id="gi-${CSS.escape(key)}"
-          ontouchstart="swipeStart(event,'${CSS.escape(key)}')"
-          ontouchmove="swipeMove(event,'${CSS.escape(key)}')"
-          ontouchend="swipeEnd(event,'${CSS.escape(key)}')"
-          onclick="toggleGrocItem('${key}')">
+        <div class="groc-item${isChecked?' checked':''}" id="gi-${CSS.escape(key)}" onclick="toggleGrocItem('${key}')">
           <div class="groc-check" style="background:${isChecked?'var(--green)':'var(--bg2)'}">
             <span class="groc-checkmark" style="display:${isChecked?'block':'none'}">&#10003;</span>
           </div>
@@ -917,11 +1038,9 @@ function renderGrocery(){
           </div>
           <div class="groc-item-right" onclick="event.stopPropagation()">
             <button class="groc-edit-btn" onclick="toggleNoteForm('${key}')" title="Add note">&#9998;</button>
+            <button class="groc-delete-btn" onclick="deleteGrocItem('${key}')" title="Delete">&#128465;</button>
             <span class="groc-item-price">$${item.price.toFixed(2)}</span>
           </div>
-        </div>
-        <div class="groc-item-delete" onclick="deleteGrocItem('${key}')">
-          <span class="groc-item-delete-icon">&#128465;</span>
         </div>
       </div>`;
     });
@@ -998,47 +1117,33 @@ function deleteGrocItem(key){
   if(wrap){wrap.style.transition='opacity 0.2s,height 0.2s';wrap.style.opacity='0';wrap.style.height='0';wrap.style.overflow='hidden';setTimeout(()=>{wrap.remove();updateGrocProgress();renderGrocStats();},220);}
 }
 
-// Swipe to delete
-let swipeStartX={}, swipeStartY={}, swipeActive={};
-function swipeStart(e,key){
-  const t=e.touches[0];
-  swipeStartX[key]=t.clientX;
-  swipeStartY[key]=t.clientY;
-  swipeActive[key]=true;
-}
-function swipeMove(e,key){
-  if(!swipeActive[key])return;
-  const t=e.touches[0];
-  const dx=t.clientX-swipeStartX[key];
-  const dy=Math.abs(t.clientY-swipeStartY[key]);
-  if(dy>20){swipeActive[key]=false;return;} // vertical scroll, cancel
-  if(dx<-20)e.preventDefault(); // prevent scroll when swiping left
-}
-function swipeEnd(e,key){
-  if(!swipeActive[key])return;
-  swipeActive[key]=false;
-  const t=e.changedTouches[0];
-  const dx=t.clientX-swipeStartX[key];
-  const item=document.getElementById('gi-'+CSS.escape(key));
-  if(!item)return;
-  if(dx<-50){
-    // Swipe left — reveal delete
-    item.classList.add('swiped');
-    // Click anywhere else to close
-    setTimeout(()=>{
-      document.addEventListener('click',function handler(){
-        item.classList.remove('swiped');
-        document.removeEventListener('click',handler);
-      },{once:true});
-    },100);
-  } else if(dx>10){
-    item.classList.remove('swiped');
-  }
-}
-
 function toggleGrocSec(bodyId,chevId){
   document.getElementById(bodyId).classList.toggle('collapsed');
   document.getElementById(chevId).classList.toggle('open');
+}
+
+/* Recipe */
+function openRecipeModal(){
+  // Auto-fill name from current meal name field
+  const mealName=document.getElementById('mm-name').value.trim();
+  document.getElementById('recipe-title').textContent=mealName?'Recipe for '+mealName:'Recipe';
+  // Load existing recipe if editing
+  const recipe=(editingId&&getMeal(editingId)&&getMeal(editingId).recipe)||{};
+  document.getElementById('recipe-ingredients').value=recipe.ingredients||'';
+  document.getElementById('recipe-cooktime').value=recipe.cooktime||'';
+  document.getElementById('recipe-instructions').value=recipe.instructions||'';
+  document.getElementById('recipe-modal-wrap').classList.add('show');
+}
+function closeRecipeModal(){document.getElementById('recipe-modal-wrap').classList.remove('show');}
+function saveRecipe(){
+  const recipe={
+    ingredients:document.getElementById('recipe-ingredients').value.trim(),
+    cooktime:document.getElementById('recipe-cooktime').value.trim(),
+    instructions:document.getElementById('recipe-instructions').value.trim(),
+  };
+  // Stash recipe on a temp object — it gets written to the meal when saveNewMeal() is called
+  window._pendingRecipe=recipe;
+  closeRecipeModal();
 }
 
 /* Modal */
@@ -1061,7 +1166,7 @@ function confirmClearAll(){
 }
 
 /* Close on overlay click */
-['meal-sheet-wrap','modal-wrap'].forEach(id=>{
+['meal-sheet-wrap','modal-wrap','recipe-modal-wrap'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});
 });
 
