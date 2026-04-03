@@ -183,9 +183,9 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 .modal-actions{display:flex;gap:8px;justify-content:center}
 
 /* Bottom sheet */
-.sheet-wrap{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:950;align-items:flex-end;justify-content:center}
+.sheet-wrap{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg2);z-index:950;overflow:hidden;flex-direction:column}
 .sheet-wrap.show{display:flex}
-.sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:1.25rem 1.25rem 0;width:100%;max-width:680px;max-height:75vh;display:flex;flex-direction:column;border-top:1px solid var(--border2)}
+.sheet{background:var(--bg2);padding:1.25rem 1.25rem 0;width:100%;max-width:680px;margin:0 auto;display:flex;flex-direction:column;height:100%;}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.25rem}
 .sheet-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:1.25rem}
 .sheet-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;margin-top:-3px;font-family:inherit}
@@ -272,9 +272,11 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 <div id="meal-sheet-wrap" class="sheet-wrap">
   <div class="sheet">
     <div class="sheet-header">
-      <div class="sheet-handle"></div>
-      <button class="sheet-close" onclick="closeMealSheet()">&#x2715;</button>
-      <div class="sheet-title" id="meal-sheet-title">Add a meal</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-top:env(safe-area-inset-top,0px)">
+        <button onclick="closeMealSheet()" style="background:none;border:none;font-size:14px;color:var(--accent);cursor:pointer;font-family:inherit;padding:0">&#x2715; Close</button>
+        <div class="sheet-title" id="meal-sheet-title" style="margin:0;font-size:15px">Add a meal</div>
+        <div style="width:60px"></div>
+      </div>
 
       <!-- Step 1 sticky search -->
       <div id="sheet-search-header" class="lib-search-row">
@@ -1172,7 +1174,7 @@ function confirmClearAll(){
 }
 
 /* Close on overlay click */
-['meal-sheet-wrap','modal-wrap','recipe-modal-wrap'].forEach(id=>{
+['modal-wrap','recipe-modal-wrap'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});
 });
 
@@ -1219,17 +1221,6 @@ function importJSON(input){
     }
   });
 })();
-
-/* iOS keyboard fix — keep sheet pinned to bottom when keyboard opens */
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',()=>{
-    const sheet=document.querySelector('.sheet-wrap.show');
-    if(!sheet)return;
-    const vv=window.visualViewport;
-    sheet.style.height=vv.height+'px';
-    sheet.style.top=vv.offsetTop+'px';
-  });
-}
 
 /* Service worker */
 if('serviceWorker' in navigator){
