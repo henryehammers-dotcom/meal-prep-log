@@ -1,7 +1,5 @@
-const CACHE = 'tallymarket-v15';
-const ASSETS = [
-  '/meal-prep-log/',
-  '/meal-prep-log/index.html',
+const CACHE = 'tallymarket-v17';
+const STATIC = [
   '/meal-prep-log/manifest.json',
   '/meal-prep-log/Tallymarket-Icon-192.png',
   '/meal-prep-log/Tallymarket-Icon-512.png',
@@ -9,7 +7,7 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+    caches.open(CACHE).then(c => c.addAll(STATIC))
   );
   self.skipWaiting();
 });
@@ -24,16 +22,18 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first — always try to get fresh content
-  // Fall back to cache only if offline
+  const url = new URL(e.request.url);
+
+  // Always fetch index.html fresh from network — never cache it
+  if(url.pathname === '/meal-prep-log/' || url.pathname === '/meal-prep-log/index.html'){
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/meal-prep-log/'))
+    );
+    return;
+  }
+
+  // Everything else: cache first
   e.respondWith(
-    fetch(e.request)
-      .then(response => {
-        // Update the cache with the fresh response
-        const copy = response.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-        return response;
-      })
-      .catch(() => caches.match(e.request))
+    caches.match(e.request).then(cached => cached || fetch(e.request))
   );
 });
