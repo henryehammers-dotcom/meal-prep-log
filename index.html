@@ -479,17 +479,11 @@ const DEFAULT_LIBRARY=[
   {id:27,name:'Trail mix',type:'Snack',desc:'Macadamia nuts, pecans, dried cranberries, dark chocolate chips',cal:320,prot:6,carb:28,fat:22,ingr:'macadamia nuts,pecans,dried cranberries,dark chocolate chips'},
   {id:28,name:'Greek yogurt + chia seeds',type:'Snack',desc:'Plain Greek yogurt with chia seeds and strawberries',cal:250,prot:20,carb:22,fat:8,ingr:'Greek yogurt,chia seeds,strawberries'},
   {id:29,name:'Protein shake',type:'Post-workout',desc:'Whey protein, milk, banana blended — within 30 min of training',cal:380,prot:42,carb:38,fat:8,ingr:'whey protein,whole milk,banana'},
-  {id:30,name:'Casein / cottage cheese',type:'Post-workout',desc:'Slow-digesting protein before bed',cal:280,prot:30,carb:14,fat:8,ingr:'cottage cheese'},
+  {id:30,name:'Cottage cheese',type:'Post-workout',desc:'Slow-digesting protein before bed',cal:280,prot:30,carb:14,fat:8,ingr:'cottage cheese'},
 ];
 
 const DEFAULT_PLAN={
-  Mon:[{id:1,type:'Breakfast'},{id:8,type:'Lunch'},{id:21,type:'Snack'},{id:15,type:'Dinner'},{id:29,type:'Post-workout'}],
-  Tue:[{id:2,type:'Breakfast'},{id:9,type:'Lunch'},{id:22,type:'Snack'},{id:16,type:'Dinner'},{id:30,type:'Post-workout'}],
-  Wed:[{id:3,type:'Breakfast'},{id:10,type:'Lunch'},{id:23,type:'Snack'},{id:17,type:'Dinner'},{id:29,type:'Post-workout'}],
-  Thu:[{id:4,type:'Breakfast'},{id:11,type:'Lunch'},{id:24,type:'Snack'},{id:18,type:'Dinner'},{id:28,type:'Snack'}],
-  Fri:[{id:5,type:'Breakfast'},{id:12,type:'Lunch'},{id:25,type:'Snack'},{id:19,type:'Dinner'},{id:29,type:'Post-workout'}],
-  Sat:[{id:6,type:'Breakfast'},{id:13,type:'Lunch'},{id:26,type:'Snack'},{id:30,type:'Post-workout'}],
-  Sun:[{id:7,type:'Breakfast'},{id:14,type:'Lunch'},{id:27,type:'Snack'},{id:20,type:'Dinner'},{id:28,type:'Post-workout'}],
+  Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[],Sat:[],
 };
 
 let library=[],plan={},currentDay='Mon',nextId=31,pickingDay=null,editingId=null,selectedType='Breakfast';
@@ -1156,12 +1150,14 @@ function showModal(title,body,onConfirm){
 }
 function closeModal(){document.getElementById('modal-wrap').classList.remove('show');}
 function confirmClearAll(){
-  showModal('Reset to defaults?','Your meal plan and library will be restored to defaults.',()=>{
-    localStorage.removeItem(KEYS.plan);localStorage.removeItem(KEYS.library);
+  showModal('Reset to defaults?','Your meal plan, library, and name will be restored to defaults.',()=>{
+    localStorage.removeItem(KEYS.plan);localStorage.removeItem(KEYS.library);localStorage.removeItem(KEYS.name);
     library=JSON.parse(JSON.stringify(DEFAULT_LIBRARY));
     plan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
     DAYS.forEach(d=>{if(!plan[d])plan[d]=[];});
-    closeModal();closeSettings();renderDayTabs();renderDayContent();
+    closeModal();closeSettings();updateTitle();renderDayTabs();renderDayContent();
+    document.getElementById('welcome-wrap').classList.add('show');
+    setTimeout(()=>document.getElementById('welcome-name').focus(),300);
   });
 }
 
