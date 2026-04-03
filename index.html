@@ -1220,6 +1220,17 @@ function importJSON(input){
   });
 })();
 
+/* iOS keyboard fix — keep sheet pinned to bottom when keyboard opens */
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',()=>{
+    const sheet=document.querySelector('.sheet-wrap.show');
+    if(!sheet)return;
+    const vv=window.visualViewport;
+    sheet.style.height=vv.height+'px';
+    sheet.style.top=vv.offsetTop+'px';
+  });
+}
+
 /* Service worker */
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./service-worker.js').then(reg=>{
