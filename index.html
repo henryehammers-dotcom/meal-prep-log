@@ -438,6 +438,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 
 <!-- Week tab -->
 <div id="tab-plan">
+  <div id="week-summary" style="display:none;font-size:12px;color:var(--text2);margin-bottom:10px;"></div>
   <div class="stats-bar" id="stats-bar"></div>
   <div class="day-tabs" id="day-tabs"></div>
   <div id="day-content"></div>
@@ -464,7 +465,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v24';
+const APP_VERSION='v27';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -572,12 +573,23 @@ function renderDayTabs(){
 function selectDay(d){currentDay=d;renderDayTabs();renderDayContent();}
 
 /* Stats */
+function weekTotal(field){return DAYS.reduce((s,d)=>s+dayTotal(d,field),0);}
 function renderStats(){
   const cal=dayTotal(currentDay,'cal'),prot=dayTotal(currentDay,'prot'),meals=(plan[currentDay]||[]).length;
+  const wCal=weekTotal('cal'),wProt=weekTotal('prot'),wMeals=DAYS.reduce((s,d)=>s+(plan[d]||[]).length,0);
   document.getElementById('stats-bar').innerHTML=`
     <div class="stat-card"><div class="stat-label">Calories</div><div class="stat-value accent">${cal||'—'}</div></div>
     <div class="stat-card"><div class="stat-label">Protein</div><div class="stat-value green">${prot?prot+'g':'—'}</div></div>
     <div class="stat-card"><div class="stat-label">Meals</div><div class="stat-value">${meals}</div></div>`;
+  const el=document.getElementById('week-summary');
+  if(el){
+    if(wMeals>0){
+      el.textContent='Weekly totals: '+wCal.toLocaleString()+' cal · '+wProt+'g protein · '+wMeals+' meals';
+      el.style.display='block';
+    } else {
+      el.style.display='none';
+    }
+  }
 }
 
 /* Day content */
