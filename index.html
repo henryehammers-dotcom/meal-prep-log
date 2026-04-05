@@ -464,7 +464,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v23';
+const APP_VERSION='v24';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -1198,12 +1198,14 @@ function copyPlanAsText(){
   lines.push('');
   let totalCal=0,totalProt=0,totalMeals=0;
   DAYS.forEach(day=>{
-    const meals=plan[day]||[];
-    if(!meals.length)return;
+    const slots=plan[day]||[];
+    if(!slots.length)return;
     lines.push('── '+FULL[day]+' ──');
-    meals.forEach(m=>{
+    slots.forEach(sl=>{
+      const m=getMeal(sl.id);
+      if(!m)return;
       const cal=m.cal||0,prot=m.prot||0,carb=m.carb||0,fat=m.fat||0;
-      lines.push('  ['+m.type+'] '+m.name);
+      lines.push('  ['+sl.type+'] '+m.name);
       if(m.desc)lines.push('    '+m.desc);
       const macros=[];
       if(cal)macros.push(cal+'cal');
