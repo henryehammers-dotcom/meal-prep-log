@@ -450,6 +450,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
     <span class="store-label">Store:</span>
     <input class="store-input" id="store-input" value="Harris Teeter" placeholder="e.g. Whole Foods...">
     <button class="btn btn-green btn-sm" onclick="fetchPrices()">Apply</button>
+    <button class="btn btn-sm" onclick="openStoreWebsite()" title="Visit store website" style="font-size:14px;padding:3px 8px">&#127758;</button>
     <span class="price-status" id="price-status"></span>
   </div>
   <div class="groc-disclaimer">Prices are estimates. Actual prices may vary.</div>
@@ -470,7 +471,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v31';
+const APP_VERSION='v33';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -914,7 +915,7 @@ const GROC_GROUPS={
     'sunflower seed','pumpkin seed','hemp seed','flax seed','chia seed',
     'rice','quinoa','rolled oat','oat','pasta','rotini','penne','spaghetti',
     'noodle','couscous','farro','barley','polenta','flour','granola',
-    'hummus','kalamata olive','black olive','green olive','sliced olive','marinara','tomato paste','broth','stock',
+    'avocado oil','hummus','kalamata olive','black olive','green olive','sliced olive','marinara','tomato paste','broth','stock',
     'canned tuna','canned salmon','canned tomato','canned bean','canned corn',
     'black bean','kidney bean','white bean','pinto bean','chickpea','refried bean','lentil',
     'coconut cream','coconut flake','chip','snack bar','sugar','brown sugar'],
@@ -982,7 +983,7 @@ function loadGrocState(){
     const gm=localStorage.getItem(KEYS.grocManual);
     const gc=localStorage.getItem(KEYS.grocChecked);
     const gn=localStorage.getItem(KEYS.grocNotes);
-    if(g){grocList=JSON.parse(g);grocLoaded=true;}
+    if(g){const parsed=JSON.parse(g);if(parsed.length>0){grocList=parsed;grocLoaded=true;}}
     if(gm)manualItems=JSON.parse(gm);
     if(gc)checkedItems=JSON.parse(gc);
     if(gn)itemNotes=JSON.parse(gn);
@@ -1053,6 +1054,32 @@ function uncheckAll(){
   renderGrocStats();
 }
 
+function openStoreWebsite(){
+  const store=document.getElementById('store-input').value.trim()||'Harris Teeter';
+  const profile=getStoreProfile(store);
+  const urls={
+    'Harris Teeter':'https://www.harristeeter.com',
+    'Whole Foods':'https://www.wholefoodsmarket.com',
+    "Trader Joe's":'https://www.traderjoes.com',
+    'Publix':'https://www.publix.com',
+    'Kroger':'https://www.kroger.com',
+    'Walmart':'https://www.walmart.com/grocery',
+    'Target':'https://www.target.com/c/grocery/-/N-5xt1a',
+    'Aldi':'https://www.aldi.us',
+    'Costco':'https://www.costco.com',
+    'Sprouts':'https://www.sprouts.com',
+    'Food Lion':'https://www.foodlion.com',
+    'Safeway':'https://www.safeway.com',
+    'Wegmans':'https://www.wegmans.com',
+    'Giant':'https://giantfood.com',
+    'Meijer':'https://www.meijer.com',
+    'HEB':'https://www.heb.com',
+    'Market Basket':'https://www.marketbasket.com',
+    'The Fresh Market':'https://www.thefreshmarket.com',
+  };
+  const url=urls[profile.name]||('https://www.google.com/search?q='+encodeURIComponent(store+' grocery store'));
+  window.open(url,'_blank');
+}
 function fetchPrices(){
   const store=document.getElementById('store-input').value.trim()||'Harris Teeter';
   const profile=getStoreProfile(store);
