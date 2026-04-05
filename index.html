@@ -453,6 +453,11 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
     <span class="price-status" id="price-status"></span>
   </div>
   <div class="groc-disclaimer">Prices are estimates. Actual prices may vary.</div>
+  <div class="store-row" style="margin-bottom:6px">
+    <input class="store-input" id="manual-item-input" placeholder="Add an item..." style="flex:1"
+      onkeydown="if(event.key==='Enter')addManualItem()">
+    <button class="btn btn-green btn-sm" onclick="addManualItem()">Add</button>
+  </div>
   <div class="stats-bar" id="groc-stats"></div>
   <div class="groc-toolbar">
     <div class="groc-toolbar-left">
@@ -465,12 +470,12 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v27';
+const APP_VERSION='v28';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
 const TYPE_ORDER=['Breakfast','Lunch','Snack','Dinner','Post-workout'];
-const KEYS={plan:'tm_plan',library:'tm_library',name:'tm_name',theme:'tm_theme',welcomed:'tm_welcomed',store:'tm_store'};
+const KEYS={plan:'tm_plan',library:'tm_library',name:'tm_name',theme:'tm_theme',welcomed:'tm_welcomed',store:'tm_store',groc:'tm_groc',grocManual:'tm_groc_manual',grocChecked:'tm_groc_checked',grocNotes:'tm_groc_notes'};
 
 const DEFAULT_LIBRARY=[
   {id:1,name:'Greek yogurt bowl',type:'Breakfast',desc:'Plain 2% Greek yogurt, banana, granola, honey, pumpkin seeds',cal:520,prot:32,carb:68,fat:14,ingr:'Greek yogurt,banana,granola,pumpkin seeds,honey'},
@@ -787,76 +792,21 @@ function saveNewMeal(){
 
 // Grocery state — persists across tab switches, resets on refresh
 let grocList=[];       // [{key, name, price, checked, note, deleted}]
-let grocLoaded=false;  // has the list been built at least once?
-let itemNotes={};      // key -> note string (session only)
-let checkedItems={};   // key -> bool
-let deletedItems={};   // key -> bool
-
-// Category price buckets (avg per item, Harris Teeter baseline)
-// Item-level price anchors — these override the category bucket for known ingredients
-const ITEM_PRICES={
-  // Proteins
-  'chicken breast':5.0,'chicken thighs':7.0,'chicken wings':6.0,'ground chicken':5.0,
-  'rotisserie chicken':8.0,'whole chicken':9.0,'ground turkey':6.0,'deli turkey':5.0,
-  'turkey breast':8.0,'turkey bacon':5.0,'lean ground beef':8.0,'ground beef':7.0,
-  'sirloin steak':11.0,'ribeye':15.0,'flank steak':10.0,'skirt steak':10.0,
-  'pork chops':6.0,'pork tenderloin':7.0,'bacon':7.0,'ham':6.0,
-  'italian sausage':6.0,'chorizo':5.0,'pork sausage':5.0,
-  'salmon':10.5,'salmon fillet':10.5,'shrimp':11.5,'tilapia':6.0,'cod':10.0,
-  'tuna steak':12.0,'canned tuna':1.5,'canned salmon':4.0,'halibut':14.0,
-  'mahi mahi':11.0,'scallops':16.0,'crab':12.0,'lobster':20.0,
-  'whey protein':9.0,'protein powder':9.0,'casein protein':10.0,
-  'tofu':3.0,'tempeh':4.0,'edamame':4.0,'lentils':2.0,
-  // Dairy & eggs
-  'eggs':4.0,'egg whites':4.0,'greek yogurt':7.0,'plain yogurt':4.0,'yogurt':4.0,
-  'cottage cheese':5.0,'feta':3.5,'string cheese':5.5,'cheddar cheese':5.0,
-  'mozzarella':5.0,'parmesan':5.0,'cream cheese':4.0,'ricotta':5.0,
-  'whole milk':3.5,'almond milk':4.0,'oat milk':5.0,'soy milk':4.0,
-  'coconut milk':3.0,'heavy cream':4.0,'butter':5.0,'ghee':8.0,'sour cream':2.5,
-  // Produce
-  'banana':1.5,'apple':2.5,'orange':2.0,'lemon':1.5,'lime':1.5,'limes':2.0,
-  'avocado':2.0,'broccoli':2.5,'sweet potato':1.5,'zucchini':2.0,'spinach':3.5,
-  'mixed greens':3.5,'kale':3.0,'cabbage':2.0,'mushrooms':3.0,
-  'cherry tomatoes':3.5,'tomato':2.0,'cucumber':1.5,'red onion':1.5,'onion':1.5,
-  'garlic':1.5,'carrots':2.0,'green beans':2.0,'corn':1.5,'frozen mango':3.5,
-  'mixed berries':4.0,'strawberries':4.0,'blueberries':4.0,'raspberries':4.0,
-  'blackberries':4.0,'potatoes':2.0,'asparagus':4.0,
-  // Pantry
-  'brown rice':3.0,'white rice':2.5,'quinoa':5.5,'rolled oats':5.0,
-  'whole wheat pasta':2.5,'rotini pasta':2.0,'penne':2.0,'spaghetti':2.0,
-  'rice noodles':3.0,'sourdough bread':5.0,'whole wheat bread':4.0,
-  'whole wheat tortillas':4.0,'corn tortillas':3.5,'rice cakes':3.5,'granola':5.0,
-  'chia seeds':5.0,'peanut butter':5.5,'almond butter':9.0,'hummus':4.0,
-  'olive oil':7.0,'soy sauce':3.0,'red wine vinegar':3.5,'marinara sauce':3.5,
-  'tomato paste':1.5,'chicken broth':3.0,'kalamata olives':4.0,
-  'honey':4.0,'maple syrup':4.5,'dark chocolate chips':4.5,
-  // Snacks
-  'macadamia nuts':8.0,'pecans':6.0,'almonds':7.0,'walnuts':8.0,'cashews':8.0,
-  'sunflower seeds':2.5,'pumpkin seeds':4.0,'chia seeds':5.0,'hemp seeds':7.0,
-  'dried cranberries':3.0,'trail mix':6.0,'protein bar':2.5,'dark chocolate':4.0,
-};
-
-function getItemPrice(ingr,cat){
-  const i=ingr.toLowerCase().trim();
-  // Try exact match first
-  if(ITEM_PRICES[i]!==undefined)return ITEM_PRICES[i];
-  // Try partial match — longest key wins
-  let best=null,bestLen=0;
-  for(const[k,v]of Object.entries(ITEM_PRICES)){
-    if(i.includes(k)&&k.length>bestLen){best=v;bestLen=k.length;}
-  }
-  if(best!==null)return best;
-  // Fall back to category bucket
-  return CAT_PRICE[cat]||3.0;
-}
+let grocLoaded=false;
+let itemNotes={};
+let checkedItems={};
+let deletedItems={};
+let manualItems=[];  // [{ingr, cat, price}] — persisted separately
 
 const CAT_PRICE={
-  'Proteins & seafood':8.5,
-  'Dairy & eggs':4.5,
   'Produce':2.5,
-  'Pantry & grains':3.5,
-  'Spices & condiments':3.0,
-  'Snacks & extras':5.0,
+  'Bread':3.5,
+  'Meat & Seafood':8.5,
+  'Dairy & Eggs':4.5,
+  'Frozen':3.5,
+  'Pantry':4.0,
+  'Drinks':3.5,
+  'Spices & Condiments':3.5,
   'Other':3.0,
 };
 
@@ -890,48 +840,140 @@ function getStoreMult(){
   return getStoreProfile(document.getElementById('store-input').value.trim()||'Harris Teeter').mult;
 }
 
-// Categorization — ORDER MATTERS. Produce checked before Proteins to avoid
-// "green beans" matching "bean" in proteins, etc.
+const ITEM_PRICES={
+  // Meat & Seafood
+  'chicken breast':5.0,'chicken thighs':7.0,'chicken wings':6.0,'ground chicken':5.0,
+  'rotisserie chicken':8.0,'whole chicken':9.0,'ground turkey':6.0,'deli turkey':5.0,
+  'turkey breast':8.0,'turkey bacon':5.0,'lean ground beef':8.0,'ground beef':7.0,
+  'sirloin steak':11.0,'ribeye':15.0,'flank steak':10.0,'skirt steak':10.0,
+  'pork chops':6.0,'pork tenderloin':7.0,'bacon':7.0,'ham':6.0,
+  'italian sausage':6.0,'chorizo':5.0,'pork sausage':5.0,
+  'salmon':10.5,'salmon fillet':10.5,'shrimp':11.5,'tilapia':6.0,'cod':10.0,
+  'canned tuna':1.5,'canned salmon':4.0,'halibut':14.0,'mahi mahi':11.0,
+  'scallops':16.0,'crab':12.0,'lobster':20.0,
+  'tofu':3.0,'tempeh':4.0,'edamame':4.0,'lentils':2.0,
+  'deli ham':5.0,'pepperoni':4.0,'salami':4.0,
+  // Dairy & Eggs
+  'eggs':4.0,'egg whites':4.0,'greek yogurt':7.0,'plain yogurt':4.0,'yogurt':4.0,
+  'cottage cheese':5.0,'feta':3.5,'string cheese':5.5,'cheddar cheese':5.0,
+  'mozzarella':5.0,'parmesan':5.0,'cream cheese':4.0,'ricotta':5.0,
+  'whole milk':3.5,'almond milk':4.0,'oat milk':5.0,'soy milk':4.0,
+  'coconut milk':3.0,'heavy cream':4.0,'butter':5.0,'ghee':8.0,'sour cream':2.5,
+  // Produce
+  'banana':1.5,'apple':2.5,'orange':2.0,'lemon':1.5,'lime':1.5,'limes':2.0,
+  'avocado':2.0,'broccoli':2.5,'sweet potato':1.5,'zucchini':2.0,'spinach':3.5,
+  'mixed greens':3.5,'kale':3.0,'cabbage':2.0,'mushrooms':3.0,
+  'cherry tomatoes':3.5,'tomato':2.0,'cucumber':1.5,'red onion':1.5,'onion':1.5,
+  'garlic':1.5,'carrots':2.0,'green beans':2.0,'corn':1.5,
+  'mixed berries':4.0,'strawberries':4.0,'blueberries':4.0,'raspberries':4.0,
+  'blackberries':4.0,'potatoes':2.0,'asparagus':4.0,
+  // Frozen
+  'frozen mango':3.5,'frozen berries':4.0,'frozen spinach':2.5,'frozen broccoli':2.5,
+  'frozen corn':2.0,'frozen peas':2.0,'frozen vegetables':3.0,'frozen fruit':3.5,
+  // Bread
+  'sourdough bread':5.0,'whole wheat bread':4.0,'whole wheat tortillas':4.0,
+  'corn tortillas':3.5,'rice cakes':3.5,'whole grain crackers':4.0,'naan':4.0,'pita':3.5,
+  // Pantry
+  'brown rice':3.0,'white rice':2.5,'quinoa':5.5,'rolled oats':5.0,
+  'whole wheat pasta':2.5,'rotini pasta':2.0,'penne':2.0,'spaghetti':2.0,
+  'rice noodles':3.0,'granola':5.0,'chia seeds':5.0,'peanut butter':5.5,
+  'almond butter':9.0,'hummus':4.0,'kalamata olives':4.0,'tomato paste':1.5,
+  'chicken broth':3.0,'black beans':1.5,'kidney beans':1.5,'chickpeas':1.5,
+  'macadamia nuts':8.0,'pecans':6.0,'almonds':7.0,'walnuts':8.0,'cashews':8.0,
+  'sunflower seeds':2.5,'pumpkin seeds':4.0,'hemp seeds':7.0,
+  'dried cranberries':3.0,'trail mix':6.0,'protein bar':2.5,'dark chocolate chips':4.5,
+  'dark chocolate':4.0,'popcorn':3.0,
+  // Spices & Condiments
+  'olive oil':7.0,'soy sauce':3.0,'red wine vinegar':3.5,'marinara sauce':3.5,
+  'honey':4.0,'maple syrup':4.5,'tahini':5.0,'hot sauce':3.0,'sriracha':3.5,
+  'mustard':2.5,'mayo':3.5,'ketchup':2.5,'fish sauce':3.5,'oyster sauce':3.5,
+  // Other
+  'whey protein':9.0,'protein powder':9.0,'casein protein':10.0,
+};
+
+function getItemPrice(ingr,cat){
+  const i=ingr.toLowerCase().trim();
+  if(ITEM_PRICES[i]!==undefined)return ITEM_PRICES[i];
+  let best=null,bestLen=0;
+  for(const[k,v]of Object.entries(ITEM_PRICES)){
+    if(i.includes(k)&&k.length>bestLen){best=v;bestLen=k.length;}
+  }
+  if(best!==null)return best;
+  return CAT_PRICE[cat]||3.0;
+}
+
+// New category structure — ORDER MATTERS
 const GROC_GROUPS={
   'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato',
-    'potato','zucchini','squash','spinach','greens','kale','cabbage','mushroom','tomato',
-    'cucumber','onion','garlic','ginger','carrot','green bean','snap pea','pea','corn',
+    'potato','zucchini','squash','spinach','mixed greens','kale','cabbage','mushroom','tomato',
+    'cucumber','onion','garlic','ginger','carrot','green bean','snap pea','corn',
     'mango','berr','strawberr','blueberr','raspberry','blackberr','grape','cherry','melon',
-    'pineapple','frozen fruit','frozen mango','frozen berr','frozen spinach','frozen broccoli',
-    'frozen corn','frozen pea','frozen vegetable','lettuce','bok choy','arugula','fennel',
-    'beet','asparagus','artichoke','eggplant','leek','shallot','bell pepper','jalapeño',
-    'celery','radish','mixed vegetable','stir fry vegetable'],
-  'Proteins & seafood':['chicken breast','chicken thigh','chicken wing','chicken drum',
+    'pineapple','lettuce','bok choy','arugula','fennel','beet','asparagus','artichoke',
+    'eggplant','leek','shallot','bell pepper','jalape','celery','radish','mixed vegetable',
+    'fresh herb','cilantro','parsley','basil leaf','mint'],
+  'Bread':['sourdough','whole wheat bread','bread','tortilla','wrap','pita','naan',
+    'rice cake','cracker','baguette','english muffin','hot dog bun','hamburger bun','bagel'],
+  'Meat & Seafood':['chicken breast','chicken thigh','chicken wing','chicken drum',
     'ground chicken','rotisserie chicken','whole chicken','turkey breast','ground turkey',
     'deli turkey','turkey bacon','lean ground beef','ground beef','sirloin','ribeye',
     'flank steak','skirt steak','chuck roast','pork chop','pork tenderloin','bacon','ham',
     'italian sausage','chorizo','pork sausage','salmon','shrimp','tilapia','cod','tuna',
-    'halibut','mahi','scallop','crab','lobster','whey protein','protein powder','casein',
-    'tofu','tempeh','edamame','lentil','black bean','kidney bean','white bean','pinto bean',
-    'chickpea','refried bean','deli ham','pepperoni','salami'],
-  'Dairy & eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk',
+    'halibut','mahi','scallop','crab','lobster','tofu','tempeh','edamame','lentil',
+    'black bean','kidney bean','white bean','pinto bean','chickpea','refried bean',
+    'deli ham','pepperoni','salami'],
+  'Dairy & Eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk',
     'cream','butter','ghee','kefir','sour cream'],
-  'Pantry & grains':['rice','quinoa','oat','pasta','rotini','tortilla','bread','cracker',
-    'naan','pita','rice cake','granola','chia','peanut butter','almond butter','cashew butter',
-    'hummus','olive','vinegar','marinara','sauce','tomato paste','broth','noodle','couscous',
-    'farro','barley','polenta','flour','sugar','oil','soy sauce','tamari','fish sauce',
-    'oyster sauce','ketchup','mustard','mayo','capers','tahini'],
-  'Spices & condiments':['salt','pepper','garlic powder','onion powder','cumin','paprika',
-    'chili powder','cayenne','oregano','basil','thyme','rosemary','turmeric','cinnamon',
+  'Frozen':['frozen mango','frozen berr','frozen fruit','frozen spinach','frozen broccoli',
+    'frozen corn','frozen pea','frozen vegetable','frozen chicken','frozen meal','frozen pizza'],
+  'Pantry':['rice','quinoa','oat','pasta','rotini','noodle','couscous','farro','barley',
+    'polenta','flour','granola','chia','peanut butter','almond butter','cashew butter',
+    'hummus','olive','marinara','tomato paste','broth','stock','canned','bean','lentil',
+    'macadamia','pecan','almond','walnut','cashew','peanut','nut','seed','sunflower',
+    'pumpkin seed','hemp','flax','dried cranberr','raisin','date','chocolate chip',
+    'dark chocolate','trail mix','protein bar','granola bar','popcorn','chip','snack',
+    'sugar','coconut'],
+  'Drinks':['coffee','tea','juice','sparkling water','sports drink','kombucha',
+    'energy drink','soda','lemonade','coconut water','protein drink'],
+  'Spices & Condiments':['salt','pepper','garlic powder','onion powder','cumin','paprika',
+    'chili powder','cayenne','oregano','thyme','rosemary','turmeric','cinnamon',
     'curry','seasoning','sriracha','hot sauce','worcestershire','vanilla','nutritional yeast',
-    'honey','maple syrup','agave'],
-  'Snacks & extras':['macadamia','pecan','almond','walnut','cashew','peanut','nut',
-    'cranberr','raisin','date','chocolate','trail mix','protein bar','granola bar','popcorn',
-    'chip','seed','sunflower','pumpkin seed','hemp','flax','collagen'],
+    'honey','maple syrup','agave','olive oil','oil','soy sauce','tamari','fish sauce',
+    'oyster sauce','ketchup','mustard','mayo','capers','tahini','vinegar','sauce','marinade'],
 };
+const GROC_ORDER=['Produce','Bread','Meat & Seafood','Dairy & Eggs','Frozen','Pantry','Drinks','Spices & Condiments','Other'];
+
 function categorizeIngr(ingr){
   const i=ingr.toLowerCase();
-  for(const[grp,keys]of Object.entries(GROC_GROUPS)){if(keys.some(k=>i.includes(k)))return grp;}
+  // Frozen must be checked before Produce to catch frozen fruit/veg
+  const orderedGroups=['Frozen','Produce','Bread','Meat & Seafood','Dairy & Eggs','Pantry','Drinks','Spices & Condiments'];
+  for(const grp of orderedGroups){
+    if(GROC_GROUPS[grp]&&GROC_GROUPS[grp].some(k=>i.includes(k)))return grp;
+  }
   return 'Other';
 }
 
+function saveGrocState(){
+  try{
+    localStorage.setItem(KEYS.groc,JSON.stringify(grocList));
+    localStorage.setItem(KEYS.grocManual,JSON.stringify(manualItems));
+    localStorage.setItem(KEYS.grocChecked,JSON.stringify(checkedItems));
+    localStorage.setItem(KEYS.grocNotes,JSON.stringify(itemNotes));
+  }catch(e){}
+}
+function loadGrocState(){
+  try{
+    const g=localStorage.getItem(KEYS.groc);
+    const gm=localStorage.getItem(KEYS.grocManual);
+    const gc=localStorage.getItem(KEYS.grocChecked);
+    const gn=localStorage.getItem(KEYS.grocNotes);
+    if(g){grocList=JSON.parse(g);grocLoaded=true;}
+    if(gm)manualItems=JSON.parse(gm);
+    if(gc)checkedItems=JSON.parse(gc);
+    if(gn)itemNotes=JSON.parse(gn);
+  }catch(e){}
+}
+
 function buildRawIngrList(){
-  // Collect raw ingredient strings exactly as typed, deduplicated case-insensitively
   const seen={};
   const out=[];
   DAYS.forEach(d=>(plan[d]||[]).forEach(sl=>{
@@ -947,17 +989,43 @@ function buildRawIngrList(){
   return out;
 }
 
+function addManualItem(){
+  const input=document.getElementById('manual-item-input');
+  if(!input)return;
+  const val=input.value.trim();
+  if(!val)return;
+  const key=val.toLowerCase();
+  // Don't add duplicates
+  const allKeys=[...grocList,...manualItems].map(i=>i.ingr.toLowerCase());
+  if(allKeys.includes(key)){input.value='';return;}
+  const cat=categorizeIngr(val);
+  const price=parseFloat((getItemPrice(val,cat)*getStoreMult()).toFixed(2));
+  manualItems.push({ingr:val,cat,price,manual:true});
+  input.value='';
+  saveGrocState();
+  renderGrocery();
+}
+
 function refreshGrocery(){
-  // Reset all session state and rebuild from meals
+  // Rebuild meal-based items, preserve manual items, checked state, notes
   checkedItems={};
   deletedItems={};
   itemNotes={};
   grocLoaded=false;
+  grocList=[];
+  // Keep manual items but reset their prices for current store
+  const mult=getStoreMult();
+  manualItems=manualItems.map(item=>({
+    ...item,
+    price:parseFloat((getItemPrice(item.ingr,item.cat)*mult).toFixed(2))
+  }));
+  saveGrocState();
   renderGrocery();
 }
 
 function uncheckAll(){
   checkedItems={};
+  saveGrocState();
   document.querySelectorAll('.groc-item').forEach(el=>{
     el.classList.remove('checked');
     const chk=el.querySelector('.groc-check');
@@ -966,6 +1034,7 @@ function uncheckAll(){
     if(mark)mark.style.display='none';
   });
   updateGrocProgress();
+  renderGrocStats();
 }
 
 function fetchPrices(){
@@ -975,12 +1044,11 @@ function fetchPrices(){
   const s=document.getElementById('price-status');
   s.textContent=profile.name+' prices applied';
   s.className='price-status done';
-  // Recalculate prices on existing list with new multiplier
   if(grocLoaded){
-    grocList=grocList.map(item=>({
-      ...item,
-      price:parseFloat((getItemPrice(item.ingr,item.cat)*profile.mult).toFixed(2))
-    }));
+    const mult=profile.mult;
+    grocList=grocList.map(item=>({...item,price:parseFloat((getItemPrice(item.ingr,item.cat)*mult).toFixed(2))}));
+    manualItems=manualItems.map(item=>({...item,price:parseFloat((getItemPrice(item.ingr,item.cat)*mult).toFixed(2))}));
+    saveGrocState();
     renderGrocery();
   }
 }
@@ -988,59 +1056,55 @@ function fetchPrices(){
 function renderGrocery(){
   const container=document.getElementById('groc-container');
 
-  // Build list first time or on refresh
+  // Load persisted state if first open
+  if(!grocLoaded){
+    loadGrocState();
+  }
+
+  // Build meal items if still not loaded
   if(!grocLoaded){
     const rawIngrs=buildRawIngrList();
-    if(!rawIngrs.length){
+    if(!rawIngrs.length&&!manualItems.length){
       container.innerHTML='<div class="empty">Add meals to your week to generate a grocery list.</div>';
       document.getElementById('groc-stats').innerHTML='';
       document.getElementById('groc-progress').textContent='';
       return;
     }
-    // Categorize
     const mult=getStoreMult();
-    const cats={};
+    grocList=[];
     rawIngrs.forEach(ingr=>{
       if(deletedItems[ingr.toLowerCase()])return;
       const cat=categorizeIngr(ingr);
-      if(!cats[cat])cats[cat]=[];
-      const basePrice=getItemPrice(ingr,cat);
-      cats[cat].push({ingr,price:parseFloat((basePrice*mult).toFixed(2))});
+      const price=parseFloat((getItemPrice(ingr,cat)*mult).toFixed(2));
+      grocList.push({ingr,cat,price});
     });
-    // Store as flat list for re-renders
-    grocList=[];
-    const secOrder=['Proteins & seafood','Dairy & eggs','Produce','Pantry & grains','Spices & condiments','Snacks & extras','Other'];
-    secOrder.forEach(cat=>{if(cats[cat])cats[cat].forEach(item=>grocList.push({...item,cat}));});
     grocLoaded=true;
+    saveGrocState();
   }
 
-  // Filter out deleted items
-  const visible=grocList.filter(item=>!deletedItems[item.ingr.toLowerCase()]);
+  // Combine meal items + manual items, filter deleted
+  const allItems=[...grocList,...manualItems].filter(item=>!deletedItems[item.ingr.toLowerCase()]);
 
-  if(!visible.length){
+  if(!allItems.length){
     container.innerHTML='<div class="empty">No items — tap &#8635; to refresh from your meals.</div>';
     document.getElementById('groc-stats').innerHTML='';
     document.getElementById('groc-progress').textContent='';
     return;
   }
 
-  // Compute totals
-  const grandTotal=visible.reduce((s,item)=>s+(checkedItems[item.ingr.toLowerCase()]?0:item.price),0);
-  const remaining=visible.filter(item=>!checkedItems[item.ingr.toLowerCase()]).length;
-  const mealCount=DAYS.reduce((s,d)=>s+(plan[d]||[]).length,0)||1;
-
+  // Stats
+  const grandTotal=allItems.reduce((s,item)=>s+(checkedItems[item.ingr.toLowerCase()]?0:item.price),0);
+  const remaining=allItems.filter(item=>!checkedItems[item.ingr.toLowerCase()]).length;
   document.getElementById('groc-stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Est. total</div><div class="stat-value green">$${grandTotal.toFixed(2)}</div></div>
-    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value">${remaining} items</div></div>
-    <div class="stat-card"><div class="stat-label">Per meal</div><div class="stat-value accent">$${(grandTotal/mealCount).toFixed(2)}</div></div>`;
+    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value">${remaining} items</div></div>`;
 
-  // Group visible items by category
-  const secOrder=['Proteins & seafood','Dairy & eggs','Produce','Pantry & grains','Spices & condiments','Snacks & extras','Other'];
+  // Group by category
   const grouped={};
-  visible.forEach(item=>{if(!grouped[item.cat])grouped[item.cat]=[];grouped[item.cat].push(item);});
+  allItems.forEach(item=>{if(!grouped[item.cat])grouped[item.cat]=[];grouped[item.cat].push(item);});
 
   let html='';
-  secOrder.forEach((cat,ci)=>{
+  GROC_ORDER.forEach((cat,ci)=>{
     if(!grouped[cat]||!grouped[cat].length)return;
     html+=`<div class="groc-section">
       <div class="groc-section-hdr" onclick="toggleGrocSec('gs-${ci}','gsc-${ci}')">
@@ -1068,7 +1132,7 @@ function renderGrocery(){
           </div>
           <div class="groc-item-right" onclick="event.stopPropagation()">
             <button class="groc-edit-btn" onclick="toggleNoteForm('${key}')" title="Add note">&#9998;</button>
-            <button class="groc-delete-btn" onclick="deleteGrocItem('${key}')" title="Delete">&#128465;</button>
+            <button class="groc-delete-btn" onclick="deleteGrocItem('${key}',${item.manual?'true':'false'})" title="Delete">&#128465;</button>
             <span class="groc-item-price">$${item.price.toFixed(2)}</span>
           </div>
         </div>
@@ -1089,20 +1153,18 @@ function toggleGrocItem(key){
   el.querySelector('.groc-check').style.background=checkedItems[key]?'var(--green)':'var(--bg2)';
   el.querySelector('.groc-checkmark').style.display=checkedItems[key]?'block':'none';
   updateGrocProgress();
-  // Update total
   renderGrocStats();
+  saveGrocState();
 }
 
 function renderGrocStats(){
-  const visible=grocList.filter(item=>!deletedItems[item.ingr.toLowerCase()]);
-  const grandTotal=visible.reduce((s,item)=>s+(checkedItems[item.ingr.toLowerCase()]?0:item.price),0);
-  const remaining=visible.filter(item=>!checkedItems[item.ingr.toLowerCase()]).length;
-  const mealCount=DAYS.reduce((s,d)=>s+(plan[d]||[]).length,0)||1;
+  const allItems=[...grocList,...manualItems].filter(item=>!deletedItems[item.ingr.toLowerCase()]);
+  const grandTotal=allItems.reduce((s,item)=>s+(checkedItems[item.ingr.toLowerCase()]?0:item.price),0);
+  const remaining=allItems.filter(item=>!checkedItems[item.ingr.toLowerCase()]).length;
   const statsEl=document.getElementById('groc-stats');
   if(statsEl)statsEl.innerHTML=`
     <div class="stat-card"><div class="stat-label">Est. total</div><div class="stat-value green">$${grandTotal.toFixed(2)}</div></div>
-    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value">${remaining} items</div></div>
-    <div class="stat-card"><div class="stat-label">Per meal</div><div class="stat-value accent">$${(grandTotal/mealCount).toFixed(2)}</div></div>`;
+    <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value">${remaining} items</div></div>`;
 }
 
 function updateGrocProgress(){
@@ -1126,7 +1188,7 @@ function saveNote(key){
   if(!input)return;
   const val=input.value.trim();
   itemNotes[key]=val;
-  // Update note display without full re-render
+  saveGrocState();
   const item=document.getElementById('gi-'+CSS.escape(key));
   if(!item)return;
   const noteEl=item.querySelector('.groc-item-note');
@@ -1141,8 +1203,13 @@ function saveNote(key){
   if(form)form.style.display='none';
 }
 
-function deleteGrocItem(key){
-  deletedItems[key]=true;
+function deleteGrocItem(key, isManual){
+  if(isManual){
+    manualItems=manualItems.filter(i=>i.ingr.toLowerCase()!==key);
+  } else {
+    deletedItems[key]=true;
+  }
+  saveGrocState();
   const wrap=document.getElementById('wrap-'+CSS.escape(key));
   if(wrap){wrap.style.transition='opacity 0.2s,height 0.2s';wrap.style.opacity='0';wrap.style.height='0';wrap.style.overflow='hidden';setTimeout(()=>{wrap.remove();updateGrocProgress();renderGrocStats();},220);}
 }
