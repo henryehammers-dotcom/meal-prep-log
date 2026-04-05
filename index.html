@@ -470,7 +470,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v28';
+const APP_VERSION='v29';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -902,50 +902,66 @@ function getItemPrice(ingr,cat){
   return CAT_PRICE[cat]||3.0;
 }
 
-// New category structure — ORDER MATTERS
+// New category structure — ORDER MATTERS (more specific terms first within each group)
 const GROC_GROUPS={
-  'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato',
-    'potato','zucchini','squash','spinach','mixed greens','kale','cabbage','mushroom','tomato',
-    'cucumber','onion','garlic','ginger','carrot','green bean','snap pea','corn',
-    'mango','berr','strawberr','blueberr','raspberry','blackberr','grape','cherry','melon',
-    'pineapple','lettuce','bok choy','arugula','fennel','beet','asparagus','artichoke',
-    'eggplant','leek','shallot','bell pepper','jalape','celery','radish','mixed vegetable',
-    'fresh herb','cilantro','parsley','basil leaf','mint'],
-  'Bread':['sourdough','whole wheat bread','bread','tortilla','wrap','pita','naan',
-    'rice cake','cracker','baguette','english muffin','hot dog bun','hamburger bun','bagel'],
+  'Frozen':['frozen mango','frozen berr','frozen fruit','frozen spinach','frozen broccoli',
+    'frozen corn','frozen pea','frozen vegetable','frozen chicken','frozen meal','frozen pizza'],
+  'Pantry':['peanut butter','almond butter','cashew butter','sunflower butter',
+    'popcorn','trail mix','protein bar','granola bar','dark chocolate chip','chocolate chip',
+    'dark chocolate bar','milk chocolate','dried cranberr','dried blueberr','dried cherr',
+    'dried mango','dried apricot','dried fig','dried date','raisin',
+    'macadamia','pecan','almond','walnut','cashew','peanut','pistachio',
+    'sunflower seed','pumpkin seed','hemp seed','flax seed','chia seed',
+    'rice','quinoa','rolled oat','oat','pasta','rotini','penne','spaghetti',
+    'noodle','couscous','farro','barley','polenta','flour','granola',
+    'hummus','marinara','tomato paste','broth','stock',
+    'canned tuna','canned salmon','canned tomato','canned bean','canned corn',
+    'black bean','kidney bean','white bean','pinto bean','chickpea','refried bean','lentil',
+    'coconut cream','coconut flake','chip','snack bar','sugar','brown sugar'],
+  'Bread':['sourdough','whole wheat bread','white bread','bread loaf','bread',
+    'whole wheat tortilla','corn tortilla','flour tortilla','tortilla','wrap',
+    'pita','naan','rice cake','whole grain cracker','cracker',
+    'baguette','english muffin','hot dog bun','hamburger bun','bagel'],
   'Meat & Seafood':['chicken breast','chicken thigh','chicken wing','chicken drum',
     'ground chicken','rotisserie chicken','whole chicken','turkey breast','ground turkey',
     'deli turkey','turkey bacon','lean ground beef','ground beef','sirloin','ribeye',
     'flank steak','skirt steak','chuck roast','pork chop','pork tenderloin','bacon','ham',
-    'italian sausage','chorizo','pork sausage','salmon','shrimp','tilapia','cod','tuna',
-    'halibut','mahi','scallop','crab','lobster','tofu','tempeh','edamame','lentil',
-    'black bean','kidney bean','white bean','pinto bean','chickpea','refried bean',
-    'deli ham','pepperoni','salami'],
-  'Dairy & Eggs':['egg','yogurt','cottage cheese','feta','string cheese','cheese','milk',
-    'cream','butter','ghee','kefir','sour cream'],
-  'Frozen':['frozen mango','frozen berr','frozen fruit','frozen spinach','frozen broccoli',
-    'frozen corn','frozen pea','frozen vegetable','frozen chicken','frozen meal','frozen pizza'],
-  'Pantry':['rice','quinoa','oat','pasta','rotini','noodle','couscous','farro','barley',
-    'polenta','flour','granola','chia','peanut butter','almond butter','cashew butter',
-    'hummus','olive','marinara','tomato paste','broth','stock','canned','bean','lentil',
-    'macadamia','pecan','almond','walnut','cashew','peanut','nut','seed','sunflower',
-    'pumpkin seed','hemp','flax','dried cranberr','raisin','date','chocolate chip',
-    'dark chocolate','trail mix','protein bar','granola bar','popcorn','chip','snack',
-    'sugar','coconut'],
-  'Drinks':['coffee','tea','juice','sparkling water','sports drink','kombucha',
-    'energy drink','soda','lemonade','coconut water','protein drink'],
-  'Spices & Condiments':['salt','pepper','garlic powder','onion powder','cumin','paprika',
+    'italian sausage','chorizo','pork sausage','salmon fillet','salmon','shrimp','tilapia',
+    'cod','tuna steak','halibut','mahi','scallop','crab','lobster',
+    'tofu','tempeh','edamame','deli ham','pepperoni','salami'],
+  'Dairy & Eggs':['egg white','egg','greek yogurt','plain yogurt','yogurt',
+    'cottage cheese','feta','string cheese','cheddar','mozzarella','parmesan',
+    'cream cheese','ricotta','cheese','whole milk','almond milk','oat milk','soy milk',
+    'coconut milk','heavy cream','half and half','sour cream','kefir',
+    'butter','ghee','whipped cream'],
+  'Produce':['banana','apple','orange','lemon','lime','avocado','broccoli','sweet potato',
+    'potato','zucchini','squash','spinach','mixed greens','kale','cabbage','mushroom','tomato',
+    'cucumber','red onion','white onion','yellow onion','onion','garlic','ginger','carrot',
+    'green bean','snap pea','fresh corn','mango','strawberr','blueberr','raspberry',
+    'blackberr','grape','cherry','melon','pineapple','peach','plum','nectarine',
+    'lettuce','bok choy','arugula','fennel','beet','asparagus','artichoke',
+    'eggplant','leek','shallot','bell pepper','jalape','celery','radish',
+    'mixed vegetable','fresh herb','cilantro','parsley','fresh basil','mint','dill','chive'],
+  'Drinks':['coffee','cold brew','espresso','tea','green tea','juice','orange juice',
+    'apple juice','sparkling water','sports drink','kombucha','energy drink',
+    'soda','lemonade','coconut water','protein drink','electrolyte'],
+  'Spices & Condiments':['olive oil','vegetable oil','coconut oil','avocado oil','sesame oil','oil',
+    'soy sauce','tamari','fish sauce','oyster sauce','worcestershire',
+    'honey','maple syrup','agave','molasses',
+    'red wine vinegar','white vinegar','apple cider vinegar','balsamic vinegar','vinegar',
+    'hot sauce','sriracha','ketchup','mustard','mayo','mayonnaise',
+    'marinara sauce','pasta sauce','tomato sauce','bbq sauce','teriyaki sauce','sauce',
+    'capers','tahini','miso','nutritional yeast',
+    'salt','pepper','garlic powder','onion powder','cumin','paprika',
     'chili powder','cayenne','oregano','thyme','rosemary','turmeric','cinnamon',
-    'curry','seasoning','sriracha','hot sauce','worcestershire','vanilla','nutritional yeast',
-    'honey','maple syrup','agave','olive oil','oil','soy sauce','tamari','fish sauce',
-    'oyster sauce','ketchup','mustard','mayo','capers','tahini','vinegar','sauce','marinade'],
+    'curry','seasoning','vanilla','spice','herb'],
 };
 const GROC_ORDER=['Produce','Bread','Meat & Seafood','Dairy & Eggs','Frozen','Pantry','Drinks','Spices & Condiments','Other'];
 
 function categorizeIngr(ingr){
-  const i=ingr.toLowerCase();
-  // Frozen must be checked before Produce to catch frozen fruit/veg
-  const orderedGroups=['Frozen','Produce','Bread','Meat & Seafood','Dairy & Eggs','Pantry','Drinks','Spices & Condiments'];
+  const i=ingr.toLowerCase().trim();
+  // Check in this specific order — Frozen and Pantry before Produce to avoid partial matches
+  const orderedGroups=['Frozen','Pantry','Bread','Meat & Seafood','Dairy & Eggs','Produce','Drinks','Spices & Condiments'];
   for(const grp of orderedGroups){
     if(GROC_GROUPS[grp]&&GROC_GROUPS[grp].some(k=>i.includes(k)))return grp;
   }
