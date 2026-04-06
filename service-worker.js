@@ -1,4 +1,4 @@
-const CACHE = 'tallymarket-v22';
+const CACHE = 'tallymarket-v38';
 const STATIC = [
   '/meal-prep-log/manifest.json',
   '/meal-prep-log/Tallymarket-Icon-192.png',

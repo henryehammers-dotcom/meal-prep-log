@@ -507,7 +507,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v36';
+const APP_VERSION='v38';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -1533,6 +1533,90 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!refreshing){refreshing=true;window.location.reload();}
   });
+}
+
+/* Scan grocery list from image */
+let _scannedItems=[];
+function closeScanModal(){
+  document.getElementById('scan-modal-wrap').classList.remove('show');
+  _scannedItems=[];
+  document.getElementById('groc-img-input').value='';
+}
+function scanGroceryImage(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const base64=e.target.result.split(',')[1];
+    const mediaType=file.type||'image/jpeg';
+    document.getElementById('scan-modal-wrap').classList.add('show');
+    document.getElementById('scan-modal-loading').style.display='block';
+    document.getElementById('scan-modal-items').innerHTML='';
+    document.getElementById('scan-confirm-btn').style.display='none';
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1000,
+          system:'You are a grocery list parser. The user will send you an image of a grocery list (handwritten or printed). Extract every item on the list and return ONLY a JSON array of strings, one string per item, cleaned up and normalized. No markdown, no explanation, just the raw JSON array.',
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+            {type:'text',text:'Extract all grocery items from this list as a JSON array of strings.'}
+          ]}]
+        })
+      });
+      const data=await resp.json();
+      const text=data.content&&data.content[0]&&data.content[0].text||'[]';
+      let items=[];
+      try{items=JSON.parse(text.replace(/```json|```/g,'').trim());}catch(e){items=[];}
+      _scannedItems=items.map(i=>({name:i,selected:true}));
+      renderScanItems();
+    }catch(err){
+      document.getElementById('scan-modal-loading').style.display='none';
+      document.getElementById('scan-modal-items').innerHTML='<p style="color:var(--red);font-size:13px">Something went wrong. Try again.</p>';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function renderScanItems(){
+  document.getElementById('scan-modal-loading').style.display='none';
+  document.getElementById('scan-confirm-btn').style.display='';
+  const container=document.getElementById('scan-modal-items');
+  if(!_scannedItems.length){
+    container.innerHTML='<p style="color:var(--text3);font-size:13px">No items found. Try a clearer photo.</p>';
+    document.getElementById('scan-confirm-btn').style.display='none';
+    return;
+  }
+  container.innerHTML=_scannedItems.map((item,i)=>`
+    <div onclick="toggleScannedItem(${i})" style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border);user-select:none">
+      <div style="width:18px;height:18px;border-radius:4px;border:2px solid ${item.selected?'var(--green)':'var(--border2)'};background:${item.selected?'var(--green)':'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+        ${item.selected?'<span style="color:#fff;font-size:11px;font-weight:700">✓</span>':''}
+      </div>
+      <span style="font-size:14px;color:${item.selected?'var(--text)':'var(--text3)'};text-decoration:${item.selected?'none':'line-through'}">${item.name}</span>
+    </div>`).join('');
+  const selectedCount=_scannedItems.filter(i=>i.selected).length;
+  document.getElementById('scan-confirm-btn').textContent='Add '+selectedCount+' item'+(selectedCount===1?'':'s');
+}
+function toggleScannedItem(idx){
+  _scannedItems[idx].selected=!_scannedItems[idx].selected;
+  renderScanItems();
+}
+function confirmScannedItems(){
+  const toAdd=_scannedItems.filter(i=>i.selected).map(i=>i.name);
+  const mult=getStoreMult();
+  const allKeys=[...grocList,...manualItems].map(i=>i.ingr.toLowerCase());
+  toAdd.forEach(name=>{
+    const key=name.toLowerCase();
+    if(allKeys.includes(key))return;
+    const cat=categorizeIngr(name);
+    const price=parseFloat((getItemPrice(name,cat)*mult).toFixed(2));
+    manualItems.push({ingr:name,cat,price,manual:true});
+  });
+  saveGrocState();
+  closeScanModal();
+  renderGrocery();
 }
 </script>
 
