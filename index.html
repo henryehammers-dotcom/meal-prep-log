@@ -507,7 +507,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v38';
+const APP_VERSION='v39';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -1554,7 +1554,7 @@ function scanGroceryImage(input){
     document.getElementById('scan-modal-items').innerHTML='';
     document.getElementById('scan-confirm-btn').style.display='none';
     try{
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      const resp=await fetch('https://tallymarket-scan.henryehammers.workers.dev/',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
