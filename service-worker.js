@@ -1,4 +1,4 @@
-const CACHE = 'tallymarket-v22';
+const CACHE = 'tallymarket-v40';
 const STATIC = [
   '/meal-prep-log/manifest.json',
   '/meal-prep-log/Tallymarket-Icon-192.png',
@@ -23,16 +23,12 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
-  // Always fetch index.html fresh from network — never cache it
   if(url.pathname === '/meal-prep-log/' || url.pathname === '/meal-prep-log/index.html'){
     e.respondWith(
       fetch(e.request).catch(() => caches.match('/meal-prep-log/'))
     );
     return;
   }
-
-  // Everything else: cache first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
