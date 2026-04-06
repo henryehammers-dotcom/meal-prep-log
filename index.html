@@ -446,19 +446,16 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 
 <!-- Grocery tab -->
 <div id="tab-grocery" style="display:none">
-  <div class="store-row">
-    <span class="store-label">Store:</span>
-    <input class="store-input" id="store-input" value="Harris Teeter" placeholder="e.g. Whole Foods...">
-    <button class="btn btn-green btn-sm" onclick="fetchPrices()">Apply</button>
-    <button class="btn btn-sm" onclick="openStoreWebsite()" title="Visit store website" style="font-size:14px;padding:3px 8px">&#127758;</button>
-    <span class="price-status" id="price-status"></span>
+  <!-- Hidden inputs still needed for functionality -->
+  <input class="store-input" id="store-input" style="display:none" value="Harris Teeter" placeholder="e.g. Whole Foods...">
+  <input type="file" id="groc-img-input" accept="image/*" capture="environment" style="display:none" onchange="scanGroceryImage(this)">
+
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+    <button class="btn btn-sm" id="store-select-btn" onclick="openStorePopup()" style="flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Harris Teeter</button>
+    <button class="btn btn-sm" onclick="openAddItemPopup()" style="flex:1;font-size:13px">Add Item</button>
+    <button class="btn btn-sm" onclick="document.getElementById('groc-img-input').click()" title="Scan a grocery list" style="font-size:14px;padding:3px 10px;flex-shrink:0">📸</button>
   </div>
   <div class="groc-disclaimer">Prices are estimates. Actual prices may vary.</div>
-  <div class="store-row" style="margin-bottom:6px">
-    <input class="store-input" id="manual-item-input" placeholder="Add an item..." style="flex:1"
-      onkeydown="if(event.key==='Enter')addManualItem()">
-    <button class="btn btn-green btn-sm" onclick="addManualItem()">Add</button>
-  </div>
   <div class="stats-bar" id="groc-stats"></div>
   <div class="groc-toolbar">
     <div class="groc-toolbar-left">
@@ -470,8 +467,47 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
   <div id="groc-container"></div>
 </div>
 
+<!-- Store popup -->
+<div id="store-popup-wrap" class="settings-wrap">
+  <div class="settings-box" style="max-width:320px">
+    <button class="settings-close" onclick="closeStorePopup()">&#x2715;</button>
+    <div class="settings-title">Select Store</div>
+    <div class="field-group">
+      <label class="field-hint">Store name</label>
+      <input type="text" id="store-popup-input" class="form-input" placeholder="e.g. Whole Foods..."
+        onkeydown="if(event.key==='Enter')applyStorePopup()">
+    </div>
+    <div style="text-align:right;margin-bottom:4px">
+      <span class="price-status" id="price-status"></span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" style="flex:1" onclick="openStoreWebsite()">&#127758; Check availability</button>
+      <button class="btn btn-primary" style="flex:1" onclick="applyStorePopup()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add item popup -->
+<div id="add-item-popup-wrap" class="settings-wrap">
+  <div class="settings-box" style="max-width:320px">
+    <button class="settings-close" onclick="closeAddItemPopup()">&#x2715;</button>
+    <div class="settings-title">Add Item</div>
+    <div class="field-group">
+      <label class="field-hint">Item name</label>
+      <input type="text" id="add-item-popup-input" class="form-input" placeholder="e.g. paper towels..."
+        onkeydown="if(event.key==='Enter')document.getElementById('add-item-popup-note').focus()">
+    </div>
+    <div class="field-group">
+      <label class="field-hint">Note (optional)</label>
+      <input type="text" id="add-item-popup-note" class="form-input" placeholder="e.g. get the organic one..."
+        onkeydown="if(event.key==='Enter')submitAddItemPopup()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitAddItemPopup()">Add to list</button>
+  </div>
+</div>
+
 <script>
-const APP_VERSION='v33';
+const APP_VERSION='v36';
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
@@ -1054,6 +1090,53 @@ function uncheckAll(){
   renderGrocStats();
 }
 
+function openStorePopup(){
+  const current=document.getElementById('store-input').value.trim()||'Harris Teeter';
+  document.getElementById('store-popup-input').value=current;
+  document.getElementById('store-popup-wrap').classList.add('show');
+  setTimeout(()=>document.getElementById('store-popup-input').focus(),100);
+}
+function closeStorePopup(){
+  document.getElementById('store-popup-wrap').classList.remove('show');
+}
+function applyStorePopup(){
+  const val=document.getElementById('store-popup-input').value.trim();
+  if(!val)return;
+  document.getElementById('store-input').value=val;
+  // Update the store button label
+  const btn=document.getElementById('store-select-btn');
+  if(btn)btn.textContent=val;
+  fetchPrices();
+  closeStorePopup();
+}
+function openAddItemPopup(){
+  document.getElementById('add-item-popup-input').value='';
+  document.getElementById('add-item-popup-note').value='';
+  document.getElementById('add-item-popup-wrap').classList.add('show');
+  setTimeout(()=>document.getElementById('add-item-popup-input').focus(),100);
+}
+function closeAddItemPopup(){
+  document.getElementById('add-item-popup-wrap').classList.remove('show');
+}
+function submitAddItemPopup(){
+  const input=document.getElementById('add-item-popup-input');
+  const noteEl=document.getElementById('add-item-popup-note');
+  if(!input)return;
+  const val=input.value.trim();
+  if(!val)return;
+  const note=noteEl?noteEl.value.trim():'';
+  const key=val.toLowerCase();
+  const allKeys=[...grocList,...manualItems].map(i=>i.ingr.toLowerCase());
+  if(!allKeys.includes(key)){
+    const cat=categorizeIngr(val);
+    const price=parseFloat((getItemPrice(val,cat)*getStoreMult()).toFixed(2));
+    manualItems.push({ingr:val,cat,price,manual:true});
+    if(note)itemNotes[key]=note;
+    saveGrocState();
+    renderGrocery();
+  }
+  closeAddItemPopup();
+}
 function openStoreWebsite(){
   const store=document.getElementById('store-input').value.trim()||'Harris Teeter';
   const profile=getStoreProfile(store);
@@ -1308,6 +1391,9 @@ function confirmClearAll(){
 }
 
 /* Close on overlay click */
+['store-popup-wrap','add-item-popup-wrap'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});
+});
 ['modal-wrap','recipe-modal-wrap'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});
 });
@@ -1385,7 +1471,11 @@ function importJSON(input){
     updateTitle();
     nextId=library.reduce((m,x)=>Math.max(m,x.id),0)+1;
     const savedStore=localStorage.getItem(KEYS.store);
-    if(savedStore)document.getElementById('store-input').value=savedStore;
+    if(savedStore){
+      document.getElementById('store-input').value=savedStore;
+      const btn=document.getElementById('store-select-btn');
+      if(btn)btn.textContent=savedStore;
+    }
     renderDayTabs();
     renderDayContent();
     const vEl=document.getElementById('settings-version');
@@ -1445,5 +1535,19 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
+
+<!-- Scan grocery list modal -->
+<div id="scan-modal-wrap" class="modal-wrap" style="z-index:1100">
+  <div class="modal-box" style="max-width:380px;width:100%;text-align:left">
+    <h3 style="margin-bottom:4px">Scanned items</h3>
+    <p style="margin-bottom:12px;font-size:12px;color:var(--text3)">Tap to deselect items you don't want to add.</p>
+    <div id="scan-modal-loading" style="display:none;text-align:center;padding:1rem;color:var(--text3);font-size:13px">Reading your list...</div>
+    <div id="scan-modal-items" style="max-height:260px;overflow-y:auto;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeScanModal()">Cancel</button>
+      <button class="btn btn-primary" id="scan-confirm-btn" onclick="confirmScannedItems()">Add all</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
