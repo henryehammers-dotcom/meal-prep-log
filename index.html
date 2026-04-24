@@ -516,7 +516,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v42';
+const APP_VERSION='v43';
 const DEFAULT_CAL_GOAL=2700;
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
@@ -686,7 +686,10 @@ function renderDayContent(){
   const eaten=loadEaten(currentDay);
   let html=`<div class="day-hdr">
     <span class="day-hdr-left">${FULL[currentDay]}</span>
-    <button class="btn btn-danger btn-sm" onclick="confirmClearDay()">Clear day</button>
+    <div style="display:flex;gap:6px">
+      ${slots.length?`<button class="btn btn-green btn-sm" onclick="copyDayToWeek()">Copy to week</button>`:''}
+      <button class="btn btn-danger btn-sm" onclick="confirmClearDay()">Clear day</button>
+    </div>
   </div>`;
   if(!slots.length){
     html+=`<div class="empty">No meals yet — tap below to add one.</div>`;
@@ -719,6 +722,19 @@ function renderDayContent(){
   document.getElementById('day-content').innerHTML=html;
 }
 
+function copyDayToWeek(){
+  showModal(
+    'Copy '+FULL[currentDay]+' to whole week?',
+    'This will replace meals on all other days with today\'s meals.',
+    ()=>{
+      const slots=JSON.parse(JSON.stringify(plan[currentDay]||[]));
+      DAYS.forEach(d=>{if(d!==currentDay)plan[d]=JSON.parse(JSON.stringify(slots));});
+      savePlan();
+      closeModal();
+      renderDayContent();
+    }
+  );
+}
 function removeFromPlan(idx){
   plan[currentDay].splice(idx,1);
   savePlan();renderDayContent();
