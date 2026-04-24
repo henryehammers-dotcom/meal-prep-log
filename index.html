@@ -74,13 +74,18 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 .btn-green{background:var(--green-dim);border-color:var(--green-border);color:var(--green)}
 .btn-sm{padding:4px 10px;font-size:11px}
 
-/* Stats */
-.stats-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
-.stat-card{flex:1;min-width:80px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-.stat-label{font-size:10px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em}
-.stat-value{font-size:18px;font-weight:600;color:var(--text)}
-.stat-value.green{color:var(--green)}
-.stat-value.accent{color:var(--accent)}
+/* Stats / progress bar */
+.stats-bar{margin-bottom:1rem}
+.cal-progress-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:1rem}
+.cal-progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.cal-progress-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3)}
+.cal-progress-nums{font-size:13px;color:var(--text2)}
+.cal-progress-nums span{font-weight:600;color:var(--text);font-size:15px}
+.cal-bar-track{height:10px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.cal-bar-fill{height:100%;border-radius:99px;transition:width 0.4s ease,background 0.3s}
+.cal-status{font-size:12px;margin-top:6px;color:var(--text3)}
+.cal-status.good{color:var(--green)}
+.cal-status.warn{color:var(--accent)}
 
 /* Meal cards */
 .meal-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:0.875rem 1rem;margin-bottom:8px;border-left-width:3px}
@@ -345,8 +350,9 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
         </div>
       </div>
       <div class="field-group">
-        <label class="field-hint">Ingredients (comma-separated, for grocery list)</label>
-        <input class="form-input" id="mm-ingr" placeholder="e.g. chicken breast, brown rice, broccoli">
+        <label class="field-hint">Ingredients &amp; amounts</label>
+        <div id="mm-ingr-rows" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+        <button type="button" class="btn btn-sm" onclick="addIngrRow()" style="width:100%">+ Add ingredient</button>
       </div>
       <div style="display:flex;gap:8px;margin-top:6px">
         <button class="btn" style="flex:1" onclick="showMealList()">Cancel</button>
@@ -404,13 +410,14 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
       <div class="settings-toggle-opt" data-val="dark" onclick="setTheme('dark','settings-theme')">Dark</div>
       <div class="settings-toggle-opt" data-val="matrix" onclick="setTheme('matrix','settings-theme')">Matrix</div>
     </div>
+    <div class="settings-section">Goals</div>
+    <div class="field-group">
+      <label class="field-hint" for="settings-cal-goal">Daily calorie goal</label>
+      <input type="number" id="settings-cal-goal" class="form-input" placeholder="e.g. 2700" min="500" max="10000" oninput="applyCalGoal(this.value)">
+    </div>
     <div class="settings-section">Data</div>
-    <button class="settings-data-btn" id="copy-plan-btn" onclick="copyPlanAsText()">Copy plan as text</button>
-    <button class="settings-data-btn" onclick="exportJSON()">Export as JSON</button>
-    <label class="settings-data-btn" style="display:flex;align-items:center;cursor:pointer">
-      Import JSON backup
-      <input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
-    </label>
+    <button class="settings-data-btn" onclick="exportJSON()">Save backup file</button>
+    <button class="settings-data-btn" id="copy-ai-btn" onclick="copyForAI()">Copy plan for AI</button>
     <button class="settings-data-btn danger" onclick="confirmClearAll()">Reset to defaults</button>
     <div style="text-align:center;margin-top:1rem;font-size:11px;color:var(--text3)">Tallymarket <span id="settings-version"></span></div>
   </div>
@@ -439,7 +446,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <!-- Week tab -->
-<div id="tab-plan">
+<div id="tab-plan" style="display:none">
   <div id="week-summary" style="display:none;font-size:12px;color:var(--text2);margin-bottom:10px;"></div>
   <div class="stats-bar" id="stats-bar"></div>
   <div class="day-tabs" id="day-tabs"></div>
@@ -509,14 +516,22 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v41';
+const APP_VERSION='v42';
+const DEFAULT_CAL_GOAL=2700;
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
 const TYPE_COLOR={Breakfast:'#e8a838',Lunch:'#2a8a5c',Dinner:'#5b4fa0',Snack:'#c0396e','Post-workout':'#1a5fa5'};
 const TYPE_ORDER=['Breakfast','Lunch','Snack','Dinner','Post-workout'];
-const KEYS={plan:'tm_plan',library:'tm_library',name:'tm_name',theme:'tm_theme',welcomed:'tm_welcomed',store:'tm_store',groc:'tm_groc',grocManual:'tm_groc_manual',grocChecked:'tm_groc_checked',grocNotes:'tm_groc_notes'};
+const KEYS={plan:'tm_plan',library:'tm_library',name:'tm_name',theme:'tm_theme',welcomed:'tm_welcomed',store:'tm_store',groc:'tm_groc',grocManual:'tm_groc_manual',grocChecked:'tm_groc_checked',grocNotes:'tm_groc_notes',calGoal:'tm_cal_goal'};
 
 const DEFAULT_LIBRARY=[
+  {id:101,name:'Morning shake',type:'Breakfast',desc:'ON Gold Standard protein, whole milk, banana, peanut butter, oats — Magic Bullet',cal:770,prot:48,carb:88,fat:18,ingr:'protein powder|1 scoop,whole milk|1 cup,banana|1 medium,peanut butter|2 tbsp,rolled oats|½ cup'},
+  {id:102,name:'Prep bowl',type:'Lunch',desc:'Chicken, ground beef, rice — your weekly prep mix',cal:700,prot:58,carb:60,fat:16,ingr:'chicken breast|your portion,lean ground beef|your portion,white rice|your portion'},
+  {id:103,name:'Prep bowl + avo',type:'Lunch',desc:'Prep mix with half avocado and olive oil drizzle',cal:950,prot:60,carb:62,fat:34,ingr:'chicken breast|your portion,lean ground beef|your portion,white rice|your portion,avocado|½,olive oil|1 tsp'},
+  {id:104,name:'Turkey wrap',type:'Snack',desc:'Tortilla, turkey slices, black beans, spinach',cal:420,prot:32,carb:46,fat:8,ingr:'tortillas|1,deli turkey|4 slices,black beans|½ cup,spinach|1 handful'},
+  {id:105,name:'Rice cakes + PB',type:'Snack',desc:'3 rice cakes with 2 tbsp peanut butter, banana',cal:350,prot:10,carb:48,fat:14,ingr:'rice cakes|3,peanut butter|2 tbsp,banana|1 medium'},
+  {id:106,name:'Greek yogurt + blueberries',type:'Snack',desc:'1 cup Greek yogurt with blueberries',cal:180,prot:18,carb:20,fat:2,ingr:'greek yogurt|1 cup,blueberries|½ cup'},
+  {id:107,name:'Evening shake + apple',type:'Post-workout',desc:'Protein shake with milk, apple and peanut butter',cal:440,prot:36,carb:44,fat:14,ingr:'protein powder|1 scoop,whole milk|1 cup,apple|1 medium,peanut butter|1 tbsp'},
   {id:1,name:'Greek yogurt bowl',type:'Breakfast',desc:'Plain 2% Greek yogurt, banana, granola, honey, pumpkin seeds',cal:520,prot:32,carb:68,fat:14,ingr:'Greek yogurt,banana,granola,pumpkin seeds,honey'},
   {id:2,name:'3-egg scramble + toast',type:'Breakfast',desc:'Eggs with spinach and feta, 2 slices sourdough',cal:580,prot:38,carb:52,fat:22,ingr:'eggs,spinach,feta,sourdough bread'},
   {id:3,name:'Overnight oats',type:'Breakfast',desc:'Rolled oats, milk, chia seeds, protein powder, mixed berries',cal:550,prot:40,carb:70,fat:12,ingr:'rolled oats,whole milk,chia seeds,whey protein,mixed berries'},
@@ -579,8 +594,10 @@ function finishWelcome(){
 }
 
 /* Settings */
+function applyCalGoal(v){const n=parseInt(v);if(n>0)localStorage.setItem(KEYS.calGoal,n);renderStats();}
 function openSettings(){
   document.getElementById('settings-name').value=localStorage.getItem(KEYS.name)||'';
+  document.getElementById('settings-cal-goal').value=getCalGoal();
   syncToggle('settings-theme',document.documentElement.getAttribute('data-theme')||'light');
   document.getElementById('settings-wrap').classList.add('show');
 }
@@ -606,7 +623,6 @@ function switchTab(tab,el){
   document.querySelectorAll('.top-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   ['plan','grocery'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
-  // Grocery does NOT auto-render — use the refresh button
 }
 
 /* Day tabs */
@@ -617,23 +633,49 @@ function renderDayTabs(){
 function selectDay(d){currentDay=d;renderDayTabs();renderDayContent();}
 
 /* Stats */
+function getCalGoal(){return parseInt(localStorage.getItem(KEYS.calGoal))||DEFAULT_CAL_GOAL;}
+function eatenKey(day){return'tm_eaten_'+day;}
+function loadEaten(day){try{const s=localStorage.getItem(eatenKey(day));return s?JSON.parse(s):{};}catch(e){return{};}}
+function saveEaten(day,eaten){try{localStorage.setItem(eatenKey(day),JSON.stringify(eaten));}catch(e){}}
+function toggleEaten(day,idx){
+  const eaten=loadEaten(day);
+  eaten[idx]=!eaten[idx];
+  saveEaten(day,eaten);
+  renderDayContent();
+}
+function dayEatenTotal(day,field){
+  const slots=plan[day]||[];
+  const eaten=loadEaten(day);
+  return slots.reduce((s,sl,i)=>{
+    if(!eaten[i])return s;
+    const m=getMeal(sl.id);
+    return s+(m&&m[field]?m[field]:0);
+  },0);
+}
 function weekTotal(field){return DAYS.reduce((s,d)=>s+dayTotal(d,field),0);}
 function renderStats(){
-  const cal=dayTotal(currentDay,'cal'),prot=dayTotal(currentDay,'prot'),meals=(plan[currentDay]||[]).length;
-  const wCal=weekTotal('cal'),wProt=weekTotal('prot'),wMeals=DAYS.reduce((s,d)=>s+(plan[d]||[]).length,0);
+  const cal=dayEatenTotal(currentDay,'cal');
+  const goal=getCalGoal();
+  const pct=Math.min(100,Math.round((cal/goal)*100));
+  const remaining=goal-cal;
+  const barColor=remaining>500?'var(--accent)':remaining>0?'#e8c13a':'var(--green)';
+  const statusText=cal===0?'Check off meals as you eat them'
+    :remaining>0?`${remaining} cal to go`
+    :'Goal reached — nice work';
+  const statusClass=remaining<=0?'good':remaining<500?'warn':'';
   document.getElementById('stats-bar').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Calories</div><div class="stat-value accent">${cal||'—'}</div></div>
-    <div class="stat-card"><div class="stat-label">Protein</div><div class="stat-value green">${prot?prot+'g':'—'}</div></div>
-    <div class="stat-card"><div class="stat-label">Meals</div><div class="stat-value">${meals}</div></div>`;
+    <div class="cal-progress-wrap">
+      <div class="cal-progress-top">
+        <span class="cal-progress-label">${FULL[currentDay]}</span>
+        <span class="cal-progress-nums"><span>${cal}</span> / ${goal.toLocaleString()} cal</span>
+      </div>
+      <div class="cal-bar-track">
+        <div class="cal-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+      <div class="cal-status ${statusClass}">${statusText}</div>
+    </div>`;
   const el=document.getElementById('week-summary');
-  if(el){
-    if(wMeals>0){
-      el.textContent='Weekly totals: '+wCal.toLocaleString()+' cal · '+wProt+'g protein · '+wMeals+' meals';
-      el.style.display='block';
-    } else {
-      el.style.display='none';
-    }
-  }
+  if(el)el.style.display='none';
 }
 
 /* Day content */
@@ -641,6 +683,7 @@ function renderDayContent(){
   renderStats();
   sortDay(currentDay);
   const slots=plan[currentDay]||[];
+  const eaten=loadEaten(currentDay);
   let html=`<div class="day-hdr">
     <span class="day-hdr-left">${FULL[currentDay]}</span>
     <button class="btn btn-danger btn-sm" onclick="confirmClearDay()">Clear day</button>
@@ -652,21 +695,19 @@ function renderDayContent(){
       const m=getMeal(sl.id);
       if(!m)return;
       const col=TYPE_COLOR[sl.type]||'#888';
-      html+=`<div class="meal-card" style="border-left-color:${col}">
+      const isEaten=!!eaten[idx];
+      html+=`<div class="meal-card" style="border-left-color:${col};opacity:${isEaten?'0.55':'1'}">
         <div class="meal-card-top">
-          <div style="flex:1;min-width:0">
-            <div class="meal-type-label" style="color:${col}">${sl.type}</div>
-            <div class="meal-name">${m.name}</div>
-            ${m.desc?`<div class="meal-desc">${m.desc}</div>`:''}
+          <div onclick="toggleEaten('${currentDay}',${idx})" style="flex-shrink:0;margin-right:12px;cursor:pointer">
+            <div style="width:26px;height:26px;border-radius:50%;border:2px solid ${isEaten?col:'var(--border2)'};background:${isEaten?col:'transparent'};display:flex;align-items:center;justify-content:center;transition:all 0.15s">
+              ${isEaten?`<span style="color:#fff;font-size:13px;font-weight:700;line-height:1">✓</span>`:''}
+            </div>
+          </div>
+          <div onclick="openMealDetail(${m.id})" style="flex:1;min-width:0;cursor:pointer">
+            <div class="meal-name" style="${isEaten?'text-decoration:line-through;color:var(--text3)':''}">${m.name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.cal} cal · tap for details</div>
           </div>
           <button class="btn btn-danger btn-sm" onclick="removeFromPlan(${idx})" style="flex-shrink:0;margin-left:8px">&#x2715;</button>
-        </div>
-        <div class="meal-meta">
-          ${m.cal?`<span class="meal-pill pill-cal">${m.cal} cal</span>`:''}
-          ${m.prot?`<span class="meal-pill pill-p">${m.prot}g P</span>`:''}
-          ${m.carb?`<span class="meal-pill pill-c">${m.carb}g C</span>`:''}
-          ${m.fat?`<span class="meal-pill pill-f">${m.fat}g F</span>`:''}
-          ${!m.ingr?`<span class="meal-pill pill-warn">no ingredients</span>`:''}
         </div>
       </div>`;
     });
@@ -681,6 +722,30 @@ function renderDayContent(){
 function removeFromPlan(idx){
   plan[currentDay].splice(idx,1);
   savePlan();renderDayContent();
+}
+
+function openMealDetail(id){
+  const m=getMeal(id);
+  if(!m)return;
+  const ingrs=m.ingr?m.ingr.split(',').map(s=>{const p=s.split('|');return{name:p[0].trim(),amount:p[1]?p[1].trim():''};}).filter(i=>i.name):[];
+  document.getElementById('meal-detail-title').textContent=m.name;
+  document.getElementById('meal-detail-body').innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      ${m.cal?`<span class="meal-pill pill-cal">${m.cal} cal</span>`:''}
+      ${m.prot?`<span class="meal-pill pill-p">${m.prot}g protein</span>`:''}
+    </div>
+    ${m.desc?`<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">${m.desc}</p>`:''}
+    ${ingrs.length?`
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:8px">Ingredients</div>
+      <div style="background:var(--bg3);border-radius:10px;padding:2px 0">
+        ${ingrs.map((ing,i)=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;font-size:14px;${i<ingrs.length-1?'border-bottom:1px solid var(--border)':''}">
+            <span style="color:var(--text)">${ing.name}</span>
+            <span style="color:var(--text3);font-size:13px">${ing.amount}</span>
+          </div>`).join('')}
+      </div>`:'<p style="font-size:13px;color:var(--text3)">No ingredients listed.</p>'}
+  `;
+  document.getElementById('meal-detail-wrap').classList.add('show');
 }
 function confirmClearDay(){
   showModal('Clear '+FULL[currentDay]+'?','All meals for this day will be removed.',()=>{
@@ -708,6 +773,34 @@ function showMealList(){
   document.getElementById('sheet-search-header').style.display='flex';
   renderSheetLib();
 }
+function addIngrRow(name,amount){
+  const container=document.getElementById('mm-ingr-rows');
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;align-items:center';
+  row.innerHTML=`
+    <input class="form-input ingr-name" placeholder="e.g. chicken breast" value="${name||''}" style="flex:2">
+    <input class="form-input ingr-amount" placeholder="e.g. 1 cup" value="${amount||''}" style="flex:1">
+    <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px;padding:2px 6px;line-height:1;flex-shrink:0" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">×</button>`;
+  container.appendChild(row);
+}
+function getIngrRows(){
+  const rows=document.querySelectorAll('#mm-ingr-rows > div');
+  return Array.from(rows).map(r=>{
+    const n=r.querySelector('.ingr-name').value.trim();
+    const a=r.querySelector('.ingr-amount').value.trim();
+    if(!n)return null;
+    return a?`${n}|${a}`:n;
+  }).filter(Boolean).join(',');
+}
+function populateIngrRows(ingrStr){
+  const container=document.getElementById('mm-ingr-rows');
+  container.innerHTML='';
+  if(!ingrStr)return;
+  ingrStr.split(',').forEach(raw=>{
+    const p=raw.split('|');
+    addIngrRow(p[0].trim(),p[1]?p[1].trim():'');
+  });
+}
 function showMealForm(id){
   editingId=id||null;
   window._pendingRecipe=null;
@@ -725,10 +818,11 @@ function showMealForm(id){
     document.getElementById('mm-prot').value=m.prot||'';
     document.getElementById('mm-carb').value=m.carb||'';
     document.getElementById('mm-fat').value=m.fat||'';
-    document.getElementById('mm-ingr').value=m.ingr||'';
+    populateIngrRows(m.ingr||'');
   } else {
-    ['mm-name','mm-desc','mm-ingr'].forEach(x=>document.getElementById(x).value='');
+    ['mm-name','mm-desc'].forEach(x=>document.getElementById(x).value='');
     ['mm-cal','mm-prot','mm-carb','mm-fat'].forEach(x=>document.getElementById(x).value='');
+    populateIngrRows('');
   }
   setTimeout(()=>document.getElementById('mm-name').focus(),100);
 }
@@ -801,6 +895,7 @@ function saveNewMeal(){
   const name=document.getElementById('mm-name').value.trim();
   if(!name){document.getElementById('mm-name').style.borderColor='var(--red)';document.getElementById('mm-name').focus();setTimeout(()=>document.getElementById('mm-name').style.borderColor='',1500);return;}
   const day=document.getElementById('mm-day').value||pickingDay||currentDay;
+  const ingr=getIngrRows();
   const meal={
     id:editingId||nextId++,
     name,
@@ -810,14 +905,13 @@ function saveNewMeal(){
     prot:parseInt(document.getElementById('mm-prot').value)||0,
     carb:parseInt(document.getElementById('mm-carb').value)||0,
     fat:parseInt(document.getElementById('mm-fat').value)||0,
-    ingr:document.getElementById('mm-ingr').value.trim(),
+    ingr,
     recipe:window._pendingRecipe||(editingId&&getMeal(editingId)&&getMeal(editingId).recipe)||null,
   };
   if(editingId){library=library.map(m=>m.id===editingId?meal:m);}
   else{library.push(meal);}
   saveLibrary();
   if(!editingId){
-    // Only add to plan when creating new, not editing
     if(!plan[day])plan[day]=[];
     plan[day].push({id:meal.id,type:meal.type});
     sortDay(day);
@@ -1035,10 +1129,10 @@ function buildRawIngrList(){
     const m=getMeal(sl.id);
     if(!m||!m.ingr)return;
     m.ingr.split(',').forEach(raw=>{
-      const trimmed=raw.trim();
-      if(!trimmed)return;
-      const key=trimmed.toLowerCase();
-      if(!seen[key]){seen[key]=true;out.push(trimmed);}
+      const nameOnly=raw.split('|')[0].trim();
+      if(!nameOnly)return;
+      const key=nameOnly.toLowerCase();
+      if(!seen[key]){seen[key]=true;out.push(nameOnly);}
     });
   }));
   return out;
@@ -1401,42 +1495,69 @@ function confirmClearAll(){
 });
 
 /* Copy plan as text */
-function copyPlanAsText(){
-  const name=localStorage.getItem(KEYS.name)||'';
+function copyForAI(){
+  const name=localStorage.getItem(KEYS.name)||'someone';
+  const goal=getCalGoal();
   const lines=[];
-  lines.push((name?name+"'s ":"")+'Meal Plan');
+  lines.push('Here is my meal plan. I need your help with it.');
   lines.push('');
-  let totalCal=0,totalProt=0,totalMeals=0;
+  lines.push('Name: '+name);
+  lines.push('Daily calorie goal: '+goal+' cal');
+  lines.push('');
+  lines.push('WEEKLY MEAL PLAN');
+  lines.push('────────────────');
+  let hasAny=false;
   DAYS.forEach(day=>{
     const slots=plan[day]||[];
     if(!slots.length)return;
-    lines.push('── '+FULL[day]+' ──');
+    hasAny=true;
+    lines.push('');
+    lines.push(FULL[day]+':');
     slots.forEach(sl=>{
       const m=getMeal(sl.id);
       if(!m)return;
-      const cal=m.cal||0,prot=m.prot||0,carb=m.carb||0,fat=m.fat||0;
-      lines.push('  ['+sl.type+'] '+m.name);
-      if(m.desc)lines.push('    '+m.desc);
-      const macros=[];
-      if(cal)macros.push(cal+'cal');
-      if(prot)macros.push(prot+'g P');
-      if(carb)macros.push(carb+'g C');
-      if(fat)macros.push(fat+'g F');
-      if(macros.length)lines.push('    '+macros.join(' · '));
-      totalCal+=cal;totalProt+=prot;totalMeals++;
+      lines.push('  • '+m.name+' ('+sl.type+')'+(m.cal?' — '+m.cal+' cal':'')+(m.prot?', '+m.prot+'g protein':''));
+      if(m.ingr){
+        const ingrs=m.ingr.split(',').map(s=>{
+          const p=s.split('|');
+          return p[1]?p[1].trim()+' '+p[0].trim():p[0].trim();
+        });
+        lines.push('    Ingredients: '+ingrs.join(', '));
+      }
     });
-    lines.push('');
+    const dayCal=dayTotal(day,'cal');
+    const dayProt=dayTotal(day,'prot');
+    if(dayCal)lines.push('  Total: '+dayCal+' cal · '+dayProt+'g protein');
   });
-  lines.push('Week total: '+totalCal+' cal · '+totalProt+'g protein · '+totalMeals+' meals');
+  if(!hasAny)lines.push('No meals planned yet.');
+  lines.push('');
+  lines.push('FOOD LIBRARY (all saved meals)');
+  lines.push('──────────────────────────────');
+  library.forEach(m=>{
+    lines.push('');
+    lines.push(m.name+' ['+m.type+']');
+    if(m.desc)lines.push('  '+m.desc);
+    const macros=[];
+    if(m.cal)macros.push(m.cal+' cal');
+    if(m.prot)macros.push(m.prot+'g protein');
+    if(macros.length)lines.push('  '+macros.join(', '));
+    if(m.ingr){
+      const ingrs=m.ingr.split(',').map(s=>{
+        const p=s.split('|');
+        return p[1]?p[1].trim()+' '+p[0].trim():p[0].trim();
+      });
+      lines.push('  Ingredients: '+ingrs.join(', '));
+    }
+  });
 
   navigator.clipboard.writeText(lines.join('\n')).then(()=>{
-    const btn=document.getElementById('copy-plan-btn');
+    const btn=document.getElementById('copy-ai-btn');
     const orig=btn.textContent;
     btn.textContent='✓ Copied!';
     btn.style.color='var(--green)';
     btn.style.borderColor='var(--green-border)';
     setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},2000);
-  }).catch(()=>alert('Copy failed — try selecting and copying manually.'));
+  }).catch(()=>alert('Copy failed — try again.'));
 }
 
 /* Export / import */
@@ -1478,6 +1599,9 @@ function importJSON(input){
       const btn=document.getElementById('store-select-btn');
       if(btn)btn.textContent=savedStore;
     }
+    const todayAbbr=DAYS[new Date().getDay()];
+    currentDay=todayAbbr;
+    document.getElementById('tab-plan').style.display='';
     renderDayTabs();
     renderDayContent();
     const vEl=document.getElementById('settings-version');
@@ -1621,6 +1745,17 @@ function confirmScannedItems(){
   renderGrocery();
 }
 </script>
+
+<!-- Meal detail popup -->
+<div id="meal-detail-wrap" class="modal-wrap">
+  <div class="modal-box" style="max-width:340px;width:100%;text-align:left">
+    <h3 id="meal-detail-title" style="margin-bottom:12px;font-size:16px"></h3>
+    <div id="meal-detail-body"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-primary" style="width:100%" onclick="document.getElementById('meal-detail-wrap').classList.remove('show')">Done</button>
+    </div>
+  </div>
+</div>
 
 <!-- Scan grocery list modal -->
 <div id="scan-modal-wrap" class="modal-wrap" style="z-index:1100">
