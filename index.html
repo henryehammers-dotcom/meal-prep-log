@@ -516,7 +516,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);pad
 </div>
 
 <script>
-const APP_VERSION='v43';
+const APP_VERSION='v44';
 const DEFAULT_CAL_GOAL=2700;
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL={Sun:'Sunday',Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
@@ -565,7 +565,13 @@ const DEFAULT_LIBRARY=[
 ];
 
 const DEFAULT_PLAN={
-  Sun:[],Mon:[],Tue:[],Wed:[],Thu:[],Fri:[],Sat:[],
+  Sun:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
+  Mon:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
+  Tue:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
+  Wed:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
+  Thu:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
+  Fri:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
+  Sat:[{id:101,type:'Breakfast'},{id:103,type:'Lunch'},{id:105,type:'Snack'},{id:104,type:'Dinner'},{id:106,type:'Snack'},{id:107,type:'Post-workout'}],
 };
 
 let library=[],plan={},currentDay='Mon',nextId=31,pickingDay=null,editingId=null,selectedType='Breakfast';
