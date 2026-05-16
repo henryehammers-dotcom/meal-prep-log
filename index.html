@@ -142,6 +142,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 /* ── DATE HEADER ── */
 .date-header{margin-bottom:16px}
 .date-abbr{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.10em;display:block;margin-bottom:2px}
+.back-to-today{background:transparent;border:none;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;padding:0;font-family:inherit;letter-spacing:0.04em;text-transform:none}
+.back-to-today:hover{text-decoration:underline}
+[data-theme=matrix] .back-to-today{color:var(--accent)}
 .date-title{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:-0.02em;color:var(--text);line-height:1.1}
 [data-theme=matrix] .date-title{font-family:var(--mono);letter-spacing:0}
 
@@ -508,7 +511,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 /* ──────────────────────────────────────────────────────────
    CONSTANTS
    ────────────────────────────────────────────────────────── */
-const APP_VERSION = 'v2';
+const APP_VERSION = 'v3';
 const KEYS = {
   welcomed: 'tm_welcomed',
   name: 'tm_name',
@@ -720,14 +723,14 @@ function confirmWipe() {
 /* ──────────────────────────────────────────────────────────
    TAB SWITCHING
    ────────────────────────────────────────────────────────── */
-function switchTab(t) {
+function switchTab(t, keepViewingDate) {
   currentTab = t;
   document.getElementById('tab-today').style.display = t === 'today' ? '' : 'none';
   document.getElementById('tab-history').style.display = t === 'history' ? '' : 'none';
   document.getElementById('tab-today-btn').classList.toggle('active', t === 'today');
   document.getElementById('tab-history-btn').classList.toggle('active', t === 'history');
   if (t === 'today') {
-    viewingDate = today;
+    if (!keepViewingDate) viewingDate = today;
     renderToday();
   } else {
     renderHistory();
@@ -746,7 +749,10 @@ function renderAll() {
 function renderToday() {
   const day = loadDay(viewingDate);
   // date header
-  document.getElementById('date-abbr').textContent = dateLabel(viewingDate);
+  const isViewingToday = viewingDate === today;
+  document.getElementById('date-abbr').innerHTML = isViewingToday
+    ? 'TODAY'
+    : `<button class="back-to-today" onclick="goToDate('${today}')">← Back to today</button> &nbsp; ${dateLabel(viewingDate)}`;
   document.getElementById('date-title').textContent = formatDateLong(viewingDate);
 
   // backfill prompt: shown ONLY when viewing today, and yesterday has no day file at all
@@ -788,7 +794,7 @@ function dismissBackfill(yIso) {
 
 function goToDate(iso) {
   viewingDate = iso;
-  switchTab('today');
+  switchTab('today', true);
 }
 
 function renderTotals() {
