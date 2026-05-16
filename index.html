@@ -175,18 +175,18 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .items-section{margin-bottom:18px}
 .items-section-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .items-section-label .helper{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:0;text-transform:none}
-.item-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;transition:border-color .15s}
+.item-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;transition:border-color .15s;overflow:hidden}
 .item-card.editing{border-color:var(--accent-border)}
 .item-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
-.item-head-text{flex:1;min-width:0}
-.item-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--text);letter-spacing:-0.01em;line-height:1.25;margin-bottom:4px}
-.item-numbers{display:flex;gap:14px;font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums}
+.item-head-text{flex:1;min-width:0;overflow:hidden}
+.item-name{font-family:var(--display);font-weight:700;font-size:16px;color:var(--text);letter-spacing:-0.01em;line-height:1.25;margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word}
+.item-numbers{display:flex;gap:14px;font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums;flex-wrap:wrap}
 .item-numbers .n-val{font-weight:700;color:var(--text)}
 .item-numbers .n-lbl{color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;margin-left:3px}
 .item-x{background:transparent;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0}
 .item-x:hover{color:var(--coral)}
 
-.item-assumptions{font-size:12px;color:var(--text2);line-height:1.5;padding:8px 10px;background:var(--bg3);border-radius:var(--r-md);margin-bottom:8px}
+.item-assumptions{font-size:12px;color:var(--text2);line-height:1.5;padding:8px 10px;background:var(--bg3);border-radius:var(--r-md);margin-bottom:8px;overflow-wrap:anywhere;word-break:break-word}
 .item-assumptions .assume-lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:3px}
 .item-edit-btn{font-size:12px;font-weight:600;padding:6px 12px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:var(--r-sm);cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
 .item-edit-btn:hover{background:var(--bg3);color:var(--text)}
@@ -232,9 +232,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .hist-empty{text-align:center;color:var(--text3);font-size:13px;padding:48px 16px}
 .hist-card{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color .15s, background .15s}
 .hist-card:hover{border-color:var(--border2);background:var(--bg3)}
-.hist-card-text{flex:1;min-width:0}
-.hist-date{font-family:var(--display);font-weight:700;font-size:15px;color:var(--text);letter-spacing:-0.01em;line-height:1.2;margin-bottom:3px}
-.hist-stats{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums}
+.hist-card-text{flex:1;min-width:0;overflow:hidden}
+.hist-date{font-family:var(--display);font-weight:700;font-size:15px;color:var(--text);letter-spacing:-0.01em;line-height:1.2;margin-bottom:3px;overflow-wrap:anywhere}
+.hist-stats{font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .hist-stats .sep{color:var(--text3);margin:0 6px}
 .hist-chev{color:var(--text3);font-size:18px;flex-shrink:0;line-height:1}
 .hist-back{background:transparent;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0 0 12px;font-family:inherit;display:inline-flex;align-items:center;gap:4px}
@@ -508,7 +508,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 /* ──────────────────────────────────────────────────────────
    CONSTANTS
    ────────────────────────────────────────────────────────── */
-const APP_VERSION = 'v1';
+const APP_VERSION = 'v2';
 const KEYS = {
   welcomed: 'tm_welcomed',
   name: 'tm_name',
@@ -1001,10 +1001,16 @@ Assumptions: ${assumptions || '(none specified — use reasonable defaults)'}
 Respond ONLY with valid JSON in this exact shape, no preamble, no markdown:
 {"name": "...", "cal": 0, "prot": 0, "assumptions": "..."}
 
+CRITICAL ESTIMATION RULES:
+- Estimate the dish AS A WHOLE based on what the finished food typically contains. Do NOT sum the listed ingredients separately as if they were additions on top of a base dish — the ingredients ARE the dish.
+- For example: "Whole 12-inch pizza with chicken, mozzarella, tomato sauce, basil" is ONE pizza totaling ~1200-1400 cal — NOT a plain pizza plus extra chicken plus extra mozzarella plus extra sauce.
+- Use realistic totals for known dishes. A 12-inch medium pizza is ~1200-1400 cal; a 6oz salmon filet is ~330-380 cal; a typical burrito is ~700-900 cal.
+- Assume realistic adult male portions unless told otherwise. Err slightly generous over conservative.
+
 The "name" should be a short clean name (e.g. "Turkey sandwich").
-The "cal" is an integer estimate of calories.
-The "prot" is an integer estimate of grams of protein.
-The "assumptions" is a one-line summary of the portion/preparation you assumed (incorporate the user's assumptions above).`;
+The "cal" is an integer estimate of total calories for the portion described.
+The "prot" is an integer estimate of grams of protein for the portion described.
+The "assumptions" is a one-line summary of the portion/preparation you assumed (you may refine the user's assumptions but keep their key constraints).`;
     const result = await callAnthropic(prompt);
     const parsed = parseSingleItem(result);
     it.name = parsed.name || name;
@@ -1043,12 +1049,18 @@ Input: ${input}
 Respond ONLY with valid JSON in this exact shape, no preamble, no markdown, no code fences:
 {"items": [{"name": "...", "cal": 0, "prot": 0, "assumptions": "..."}]}
 
-Rules:
+CRITICAL ESTIMATION RULES:
+- Estimate each dish AS A WHOLE based on what the finished food typically contains. Do NOT sum individual ingredients separately.
+- For known dishes use realistic totals: a 12-inch medium pizza is ~1200-1400 cal total; a typical restaurant burrito is ~700-900 cal; a 6oz salmon filet with light oil is ~330-380 cal.
+- Assume realistic adult male portion sizes unless the user specifies otherwise. Err on the side of slightly generous over conservative — under-estimating is the worse error.
+- "A whole [dish]" means the entire thing. "Some [dish]" means a normal serving. Ambiguous phrasing like "a medium pizza" usually means the whole pizza for one person eating, not a few slices.
+
+Other rules:
 - One JSON item per distinct food/meal mentioned (e.g. "shake and a sandwich" → 2 items).
 - "name" is a short clean label (e.g. "Protein shake", "Turkey sandwich", "Almonds").
-- "cal" is an integer estimate of calories.
-- "prot" is an integer estimate of grams of protein.
-- "assumptions" is a one-line plain-language summary of the portion size and preparation you assumed (e.g. "1 scoop whey, 1 cup milk, 1 medium banana" or "2 slices bread, 3oz turkey, 1 slice cheese, light mayo"). Be specific so the user can sanity-check.`;
+- "cal" is an integer estimate of total calories for the portion eaten.
+- "prot" is an integer estimate of grams of protein for the portion eaten.
+- "assumptions" is a one-line plain-language summary of what you assumed about portion size and preparation. Be specific enough that the user can sanity-check (e.g. "1 scoop whey, 1 cup whole milk, 1 medium banana" or "Whole 12-inch medium pizza with chicken, ~8 slices total").`;
     const result = await callAnthropic(prompt);
     const parsed = parseItemList(result);
     if (!parsed.length) {
