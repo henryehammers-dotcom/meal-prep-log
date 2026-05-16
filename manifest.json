@@ -1,20 +1,12 @@
 {
   "name": "Tallymarket",
   "short_name": "Tallymarket",
-  "start_url": "/meal-prep-log/",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#f5f4f0",
-  "theme_color": "#e8824a",
+  "background_color": "#f4efe6",
+  "theme_color": "#1f4f47",
   "icons": [
-    {
-      "src": "Tallymarket-Icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "Tallymarket-Icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "Tallymarket-Icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "Tallymarket-Icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
